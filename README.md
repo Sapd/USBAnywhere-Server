@@ -48,10 +48,13 @@ Use **[USBAnywhere Client](https://github.com/oscarlosu-lab/USBAnywhere)** on an
 
 ## 🔗 USBAnywhere Ecosystem
 
-| Project | Role | Description |
+| Component | Platform / Role | Description |
 |---|---|---|
-| **[USBAnywhere (Client)](https://github.com/oscarlosu-lab/USBAnywhere)** | 🖥️ Windows Client + Linux/Armbian Auto-Deploy | Connect to Windows or Linux/Raspberry Pi/Orange Pi USB/IP servers |
-| **[USBAnywhere Server](https://github.com/oscarlosu-lab/USBAnywhere-Server)** | 🌐 Windows Server | Share local USB devices from a Windows PC over TCP port 3240 |
+| **[USBAnywhere Client](https://github.com/oscarlosu-lab/USBAnywhere)** | 🖥️ Windows 10/11 (x64 / ARM64) | Connect to remote USB devices with WHQL drivers & WSK engine |
+| **[USBAnywhere Server](https://github.com/oscarlosu-lab/USBAnywhere-Server)** | 🌐 Windows 10/11 (.NET 9.0) | Share local USB peripherals over network with GUI & Auto-Bind |
+| **[USBAnywhere Android](https://github.com/oscarlosu-lab/USBAnywhere-Android)** | 📱 Android & Android TV | Rootless USB/IP server, Sunshine handoff & DualSense haptics |
+| **[Official Website](https://oscarlosu-lab.github.io/USBAnywhere/)** | 🌍 Web Portal | Interactive guides, documentation & download hub |
+| **[Reddit Community](https://www.reddit.com/r/UsbAnywhere/)** | 💬 r/UsbAnywhere | Support, discussions, community setups & announcements |
 | [usbipd-win](https://github.com/dorssel/usbipd-win) | ⚙️ Core Driver | Underlying Windows USB/IP kernel driver by Frans van Dorsselaer |
 
 ## ⚙️ Requirements

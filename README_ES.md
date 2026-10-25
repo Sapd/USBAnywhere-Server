@@ -48,11 +48,14 @@ Usa **[USBAnywhere Client](https://github.com/oscarlosu-lab/USBAnywhere)** en cu
 
 ## 🔗 Ecosistema USBAnywhere
 
-| Proyecto | Rol | Descripción |
+| Componente | Plataforma / Rol | Descripción |
 |---|---|---|
-| **[USBAnywhere (Client)](https://github.com/oscarlosu-lab/USBAnywhere)** | 🖥️ Cliente Windows + Auto-Deploy Linux/Armbian | Conecta dispositivos USB desde servidores Windows o Linux/Raspberry Pi/Orange Pi |
-| **[USBAnywhere Server](https://github.com/oscarlosu-lab/USBAnywhere-Server)** | 🌐 Servidor Windows | Exporta periféricos USB conectados a un PC Windows por red (TCP 3240) |
-| [usbipd-win](https://github.com/dorssel/usbipd-win) | ⚙️ Driver Base | Motor USB/IP para Windows de código abierto |
+| **[USBAnywhere Cliente](https://github.com/oscarlosu-lab/USBAnywhere)** | 🖥️ Windows 10/11 (x64 / ARM64) | Conecta dispositivos USB remotos con drivers WHQL y motor WSK |
+| **[USBAnywhere Servidor](https://github.com/oscarlosu-lab/USBAnywhere-Server)** | 🌐 Windows 10/11 (.NET 9.0) | Comparte periféricos USB locales por red con GUI y Auto-Bind |
+| **[USBAnywhere Android](https://github.com/oscarlosu-lab/USBAnywhere-Android)** | 📱 Android y Android TV | Servidor USB/IP rootless, integración Sunshine y hápticos DualSense |
+| **[Web Oficial](https://oscarlosu-lab.github.io/USBAnywhere/)** | 🌍 Portal Web | Guías interactivas, documentación y centro de descargas |
+| **[Comunidad Reddit](https://www.reddit.com/r/UsbAnywhere/)** | 💬 r/UsbAnywhere | Soporte, debates, configuraciones de la comunidad y anuncios |
+| [usbipd-win](https://github.com/dorssel/usbipd-win) | ⚙️ Driver Base | Motor USB/IP para Windows de código abierto por Frans van Dorsselaer |
 
 ## 📄 Licencia
 
