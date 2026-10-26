@@ -1,71 +1,90 @@
-# 🌐 USBAnywhere Server — Servidor USB/IP para Windows
+# 🌐 USBAnywhere Server — Servidor USB/IP para Escritorio (Windows & macOS)
 
-🌐 **Idioma / Language:** [English](README.md) | **Español**
+🌐 **Language / Idioma:** [English](README.md) | **Español**
 
-**v3.0.0** | [🌍 Web Oficial](https://oscarlosu-lab.github.io/USBAnywhere/) | [Descargar Última Versión](https://github.com/oscarlosu-lab/USBAnywhere-Server/releases/latest) | [🔗 Cliente USBAnywhere](https://github.com/oscarlosu-lab/USBAnywhere) | [📱 USBAnywhere Android](https://github.com/oscarlosu-lab/USBAnywhere-Android) | [💬 Comunidad Reddit](https://www.reddit.com/r/UsbAnywhere/) | [📖 Manual de Usuario](docs/USAGE_ES.md)
+**v3.0.1** | [🌍 Sitio Web Oficial](https://oscarlosu-lab.github.io/USBAnywhere/) | [Descargar Última Versión](https://github.com/oscarlosu-lab/USBAnywhere-Server/releases/latest) | [🔗 Cliente USBAnywhere](https://github.com/oscarlosu-lab/USBAnywhere) | [📱 USBAnywhere Android](https://github.com/oscarlosu-lab/USBAnywhere-Android) | [💬 Comunidad Reddit](https://www.reddit.com/r/UsbAnywhere/) | [📖 Manual Windows](docs/USAGE_ES.md) | [🍎 Manual macOS](docs/USAGE_MACOS_ES.md)
 
-**Comparte dispositivos USB desde cualquier PC Windows por red — Sin línea de comandos.**
+**Comparte periféricos USB locales desde PCs Windows y Apple Macs a través de tu red doméstica o VPN.**
 
-Interfaz gráfica moderna en .NET 9.0 para [usbipd-win](https://github.com/dorssel/usbipd-win), vinculada nativamente con el ecosistema **[USBAnywhere v3.0](https://github.com/oscarlosu-lab/USBAnywhere)**.
+Una suite de servidor de escritorio unificada que combina:
+- **Windows**: Servidor gráfico moderno en .NET 9.0 (WPF) con wrapper sobre [usbipd-win](https://github.com/dorssel/usbipd-win).
+- **macOS**: Demonio nativo y CLI en Swift con IOKit en espacio de usuario, con binarios universales (Apple Silicon M1/M2/M3/M4 e Intel).
+
+Parte del **[Ecosistema de Código Abierto USBAnywhere v3.0+](https://github.com/oscarlosu-lab/USBAnywhere)**.
 
 [![GitHub Downloads](https://img.shields.io/github/downloads/oscarlosu-lab/USBAnywhere-Server/total?style=flat-square&logo=github&color=blue)](https://github.com/oscarlosu-lab/USBAnywhere-Server/releases)
 [![GitHub Stars](https://img.shields.io/github/stars/oscarlosu-lab/USBAnywhere-Server?style=flat-square&logo=github&color=yellow)](https://github.com/oscarlosu-lab/USBAnywhere-Server/stargazers)
-[![Licencia](https://img.shields.io/badge/Licencia-GPLv3-blue.svg?style=flat-square)](https://www.gnu.org/licenses/gpl-3.0)
-[![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20(x64)-lightgrey?style=flat-square&logo=windows)](https://github.com/oscarlosu-lab/USBAnywhere-Server)
-[![Web Oficial](https://img.shields.io/badge/Web-USBAnywhere-06B6D4?style=flat-square&logo=googlechrome&logoColor=white)](https://oscarlosu-lab.github.io/USBAnywhere/)
-[![Comunidad Reddit](https://img.shields.io/badge/Reddit-r%2FUsbAnywhere-FF4500?style=flat-square&logo=reddit&logoColor=white)](https://www.reddit.com/r/UsbAnywhere/)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Apoyar%20Proyecto-FF5E5B?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/oscarlosu)
+[![License](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](https://www.gnu.org/licenses/gpl-3.0)
+[![Platform Windows](https://img.shields.io/badge/platform-Windows%2010%2F11%20(x64)-lightgrey?style=flat-square&logo=windows)](https://github.com/oscarlosu-lab/USBAnywhere-Server)
+[![Platform macOS](https://img.shields.io/badge/platform-macOS%20(Apple%20Silicon%20%2F%20Intel)-lightgrey?style=flat-square&logo=apple)](docs/USAGE_MACOS_ES.md)
+[![Website](https://img.shields.io/badge/Website-USBAnywhere-06B6D4?style=flat-square&logo=googlechrome&logoColor=white)](https://oscarlosu-lab.github.io/USBAnywhere/)
+[![Reddit Community](https://img.shields.io/badge/Reddit-r%2FUsbAnywhere-FF4500?style=flat-square&logo=reddit&logoColor=white)](https://www.reddit.com/r/UsbAnywhere/)
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20Project-FF5E5B?style=flat-square&logo=ko-fi&logoColor=white)](https://ko-fi.com/oscarlosu)
 
-## ✨ Características
+---
 
-- 🔧 **Cero Configuración** — Instalación desatendida y automática de drivers `usbipd-win` certificados en el primer arranque.
-- 📤 **Compartir con Un Clic y Compartir Todo** — Botón individual **📤 Compartir / 🚫 Detener** y botón **⚡ Compartir Todo**.
-- 🔗 **Vinculación Directa con USBAnywhere Client** — Indicador interactivo con la IP local del servidor (`IP: x.x.x.x:3240`) y acceso directo a **🔗 Cliente USBAnywhere**.
-- 🔄 **Auto-Bind Persistente** — Recuerda los dispositivos compartidos (`VID:PID`) y vuelve a compartirlos automáticamente al reconectarlos.
-- ⚡ **Interfaz Reactiva Sin Parpadeo** — Actualización in-place y soporte completo de bandeja del sistema (`System Tray`).
-- 📛 **Identificación Real** — Muestra nombres de hardware descriptivos mediante WMI y detección inteligente (CH340/Serial, Cámaras, Almacenamiento, Dongles).
-- 🛡️ **Firewall y Arranque con Windows** — Configuración en 1 clic del puerto TCP 3240 en el Firewall de Windows y arranque elevado mediante Programador de Tareas.
-- 🎨 **Temas Claro y Oscuro Dinámicos** — Cambio instantáneo de tema visual e idioma (Español / Inglés) persistente.
-- 📦 **Modo Híbrido** — Disponible en paquete ZIP portable auto-contenido o instalador guiado Setup con auto-actualizador verificado por SHA-256.
+## ✨ Características Principales
 
-## 📦 Instalación
+- 🖥️ **Soporte de Servidor Windows y 🍎 macOS** — Comparte periféricos desde tu PC Windows o tu Mac hacia cualquier cliente de red local, Wi-Fi o VPN.
+- 🎮 **Ideal para Joysticks, SimRacing y Gaming** — Reenvía palancas de vuelo, volantes, mandos, tarjetas de sonido/DAC y adaptadores serie con mínima latencia.
+- 🔧 **Cero Configuración en Windows** — Instalación automatizada de drivers oficiales `usbipd-win` en el primer arranque.
+- ⚡ **Auto-Instalación en 1 Clic en macOS** — Script automatizado vía curl/bash que compila e instala el demonio Swift con servicio en segundo plano `LaunchDaemon`.
+- 📤 **Compartir en 1 Clic & Compartir Todo** — Conmutadores individuales o botón **⚡ Compartir Todo**.
+- 🔄 **Auto-Bind Persistente** — Vuelve a compartir automáticamente periféricos memorizados por `VID:PID` al reconectarse.
+- 🛡️ **Seguridad y Firewall Reforzado** — Reglas de Windows Firewall acotadas a la subred local; demonio macOS seguro.
+- 🎨 **Temas Dinámicos Claro y Oscuro (Windows)** — Cambio de tema e idioma (ES/EN) en tiempo de ejecución.
 
-1. Descarga `USBAnywhere-Server-v3.0.0-x64-Portable.zip` o el instalador `USBAnywhere-Server_Setup_v3.0.0.exe` desde [Releases](https://github.com/oscarlosu-lab/USBAnywhere-Server/releases/latest).
+---
+
+## 🚀 Inicio Rápido — Servidor Windows
+
+1. Descarga `USBAnywhere-Server_Setup_v3.0.1.exe` o el archivo ZIP portable desde [Releases](https://github.com/oscarlosu-lab/USBAnywhere-Server/releases/latest).
 2. Ejecuta `USBAnywhere-Server.exe` como Administrador.
-3. ¡Listo! El driver se configurará automáticamente si no está instalado.
+3. Haz clic en **📤 Compartir** en cualquier periférico (o en **⚡ Compartir Todo**).
+4. Haz clic en la **etiqueta verde con la IP** en la barra superior para copiar la dirección de tu servidor.
+5. Abre **[USBAnywhere Client](https://github.com/oscarlosu-lab/USBAnywhere)** en tu PC cliente, escribe la IP y ¡conéctate!
 
-## 🚀 Inicio Rápido
+---
 
-### 1. Compartir Dispositivos en el PC Servidor
-1. Abre **USBAnywhere Server**.
-2. Haz clic en **📤 Compartir** en el dispositivo deseado (o en **⚡ Compartir Todo**).
-3. Haz clic en la insignia verde **IP** en la cabecera para copiar la IP de este servidor.
+## 🍎 Inicio Rápido — Servidor macOS
 
-### 2. Conectar desde el Cliente USBAnywhere
-Usa **[USBAnywhere Client](https://github.com/oscarlosu-lab/USBAnywhere)** en cualquier otro PC con Windows:
-1. Abre **USBAnywhere Client**.
-2. Pega la dirección IP del servidor.
-3. Pulsa **Escanear** y conéctate a los dispositivos compartidos.
+En tu Mac (Apple Silicon o Intel), abre la **Terminal** y ejecuta:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oscarlosu-lab/USBAnywhere-Server/main/scripts/install-server-mac.sh | sudo bash
+```
+
+Para listar los periféricos y verificar el estado:
+```bash
+usbanywhere-server-mac list
+```
+
+Consulta el [Manual de macOS en Español](docs/USAGE_MACOS_ES.md) o en [Inglés](docs/USAGE_MACOS_EN.md) para más detalles.
+
+---
 
 ## 🔗 Ecosistema USBAnywhere
 
 | Componente | Plataforma / Rol | Descripción |
 |---|---|---|
-| **[USBAnywhere Cliente](https://github.com/oscarlosu-lab/USBAnywhere)** | 🖥️ Windows 10/11 (x64 / ARM64) | Conecta dispositivos USB remotos con drivers WHQL y motor WSK |
-| **[USBAnywhere Servidor](https://github.com/oscarlosu-lab/USBAnywhere-Server)** | 🌐 Windows 10/11 (.NET 9.0) | Comparte periféricos USB locales por red con GUI y Auto-Bind |
-| **[USBAnywhere Android](https://github.com/oscarlosu-lab/USBAnywhere-Android)** | 📱 Android y Android TV | Servidor USB/IP rootless, integración Sunshine y hápticos DualSense |
-| **[Web Oficial](https://oscarlosu-lab.github.io/USBAnywhere/)** | 🌍 Portal Web | Guías interactivas, documentación y centro de descargas |
-| **[Comunidad Reddit](https://www.reddit.com/r/UsbAnywhere/)** | 💬 r/UsbAnywhere | Soporte, debates, configuraciones de la comunidad y anuncios |
-| **[Apoyar en Ko-fi](https://ko-fi.com/oscarlosu)** | ☕ Comunidad | Apoya el hosting, pruebas de hardware y desarrollo libre |
-| [usbipd-win](https://github.com/dorssel/usbipd-win) | ⚙️ Driver Base | Motor USB/IP para Windows de código abierto por Frans van Dorsselaer |
+| **[USBAnywhere Client](https://github.com/oscarlosu-lab/USBAnywhere)** | 🖥️ Windows 10/11 (x64 / ARM64) | Conexión a periféricos remotos con drivers certificados WHQL y motor WSK |
+| **[USBAnywhere Server](https://github.com/oscarlosu-lab/USBAnywhere-Server)** | 🌐 Windows & 🍎 macOS | Servidor USB/IP de escritorio con interfaz gráfica (Windows) y demonio Swift (macOS) |
+| **[USBAnywhere Android](https://github.com/oscarlosu-lab/USBAnywhere-Android)** | 📱 Android & Android TV | Servidor USB/IP sin root, automatización Sunshine y háptica DualSense |
+| **[Script Servidor Linux](https://github.com/oscarlosu-lab/USBAnywhere/blob/main/scripts/install-server.sh)** | 🐧 Linux & Raspberry Pi | Script en 1 clic para auto-exportar dispositivos por udev/kernel |
+| **[Sitio Web Oficial](https://oscarlosu-lab.github.io/USBAnywhere/)** | 🌍 Portal Web | Guías interactivas, documentación y descargas |
+| **[Comunidad Reddit](https://www.reddit.com/r/UsbAnywhere/)** | 💬 r/UsbAnywhere | Soporte, debates, configuraciones de la comunidad y avisos |
+| **[Apoyo en Ko-fi](https://ko-fi.com/oscarlosu)** | ☕ Comunidad | Apoya el hosting, pruebas de drivers e ingeniería de código abierto |
+
+## ⚙️ Requisitos
+
+- **Windows**: Windows 10/11 (x64), permisos de Administrador, puerto TCP 3240.
+- **macOS**: macOS 12 Monterey o superior (Apple Silicon M1/M2/M3/M4 o Intel x86_64), puerto TCP 3240.
 
 ## 📄 Licencia
 
-Este proyecto está bajo la licencia **GNU General Public License v3.0 (GPLv3)**.
+Este proyecto está bajo licencia **GNU General Public License v3.0 (GPLv3)**.
 
-> **USBAnywhere Servidor es 100% software libre y código abierto.** Eres libre de ejecutar, estudiar, compartir y modificar el software bajo los términos de la Licencia Pública General de GNU publicada por la Free Software Foundation.
-
-Consulta el archivo [LICENSE](LICENSE) para ver el texto completo de la licencia.
+Consulta el archivo [LICENSE](LICENSE) para conocer los términos completos.
 
 ---
 

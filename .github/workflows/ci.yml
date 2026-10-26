@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-test:
+  build-and-test-windows:
     name: Build & xUnit Tests (.NET 9 Windows)
     runs-on: windows-latest
 
@@ -29,3 +29,17 @@ jobs:
 
       - name: Run Unit Tests (54 xUnit Tests)
         run: dotnet test USBAnywhere-Server.sln -c Release --no-build --verbosity normal
+
+  build-and-test-macos:
+    name: Build & Unit Tests (Swift macOS Apple Silicon)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build & Test Swift Server
+        run: |
+          cd src/USBAnywhere.Server.Mac
+          swift build -c release
+          swift test
