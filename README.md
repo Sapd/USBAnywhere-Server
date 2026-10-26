@@ -10,7 +10,7 @@ A clean, modern .NET 9.0 GUI server for [usbipd-win](https://github.com/dorssel/
 
 [![GitHub Downloads](https://img.shields.io/github/downloads/oscarlosu-lab/USBAnywhere-Server/total?style=flat-square&logo=github&color=blue)](https://github.com/oscarlosu-lab/USBAnywhere-Server/releases)
 [![GitHub Stars](https://img.shields.io/github/stars/oscarlosu-lab/USBAnywhere-Server?style=flat-square&logo=github&color=yellow)](https://github.com/oscarlosu-lab/USBAnywhere-Server/stargazers)
-[![License](https://img.shields.io/badge/license-Free%20for%20Personal%20%26%20Gaming-blue?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](https://www.gnu.org/licenses/gpl-3.0)
 [![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11%20(x64)-lightgrey?style=flat-square&logo=windows)](https://github.com/oscarlosu-lab/USBAnywhere-Server)
 [![Website](https://img.shields.io/badge/Website-USBAnywhere-06B6D4?style=flat-square&logo=googlechrome&logoColor=white)](https://oscarlosu-lab.github.io/USBAnywhere/)
 [![Reddit Community](https://img.shields.io/badge/Reddit-r%2FUsbAnywhere-FF4500?style=flat-square&logo=reddit&logoColor=white)](https://www.reddit.com/r/UsbAnywhere/)
@@ -67,7 +67,9 @@ Use **[USBAnywhere Client](https://github.com/oscarlosu-lab/USBAnywhere)** on an
 
 ## 📄 License
 
-> **USBAnywhere is free for personal, educational, and gaming use. Commercial redistribution, rebranding, or selling of this software/derivatives is strictly prohibited without explicit written consent from the author.**
+This project is licensed under the **GNU General Public License v3.0 (GPLv3)**.
+
+> **USBAnywhere Server is 100% Free and Open Source.** You are free to run, study, share, and modify the software under the terms of the GNU General Public License as published by the Free Software Foundation.
 
 See [LICENSE](LICENSE) for full legal terms and conditions.
 
