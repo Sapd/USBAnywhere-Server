@@ -8,7 +8,7 @@
 
 A unified desktop server suite combining:
 - **Windows**: Modern .NET 9.0 WPF GUI server wrapping [usbipd-win](https://github.com/dorssel/usbipd-win).
-- **macOS**: Native Swift daemon & CLI tool using userspace IOKit with Universal binary support (Apple Silicon M1/M2/M3/M4 & Intel).
+- **macOS**: Native Swift IOUSBHost server, CLI and SwiftUI menu-bar app. Physical validation currently covers Apple Silicon; see the Mac guide for limits.
 
 Part of the **[USBAnywhere v3.0+ Open-Source Ecosystem](https://github.com/oscarlosu-lab/USBAnywhere)**.
 
@@ -28,7 +28,7 @@ Part of the **[USBAnywhere v3.0+ Open-Source Ecosystem](https://github.com/oscar
 - 🖥️ **Windows & 🍎 macOS Server Support** — Share devices from either Windows or Mac across your LAN, Wi-Fi, or VPN.
 - 🎮 **Perfect for Joysticks, SimRacing & Gaming** — Forward flight sticks, racing wheels, gamepads, DACs, and serial adapters with minimal latency.
 - 🔧 **Zero Configuration on Windows** — Auto-installs official `usbipd-win` drivers on first run.
-- ⚡ **1-Click Auto-Setup on macOS** — Automated curl/bash script sets up universal Swift daemon with LaunchDaemon persistence.
+- 🍎 **Native Mac App** — Per-device sharing, reconnect, live transfer diagnostics and a persistent Swift background service.
 - 📤 **One-Click & Share All** — Instant Share/Stop toggles or **⚡ Share All** for all local USB peripherals.
 - 🔄 **Persistent Auto-Bind** — Automatically re-shares remembered devices when plugged back in.
 - 🛡️ **Hardened Firewall & Security** — Windows Firewall rules restricted to local subnet; secure daemon privileges.
@@ -48,16 +48,16 @@ Part of the **[USBAnywhere v3.0+ Open-Source Ecosystem](https://github.com/oscar
 
 ## 🍎 Quick Start — macOS Server
 
-On your Mac (Apple Silicon or Intel), open **Terminal** and run:
+Build the native server and app from this checkout:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/oscarlosu-lab/USBAnywhere-Server/main/scripts/install-server-mac.sh | sudo bash
+```sh
+src/USBAnywhere.Server.Mac/build.sh
+src/USBAnywhere.Server.Mac/build/usbanywhere-server-mac list
 ```
 
-To list connected devices and check export status:
-```bash
-usbanywhere-server-mac list
-```
+Install with explicit local/client addresses and USB target identifiers as described
+in the [Mac README](src/USBAnywhere.Server.Mac/README.md). The app controls sharing
+without requiring terminal commands for everyday use.
 
 See [macOS User Guide (English)](docs/USAGE_MACOS_EN.md) / [Guía de macOS (Español)](docs/USAGE_MACOS_ES.md) for full options.
 
@@ -74,6 +74,11 @@ curl -fsSL https://raw.githubusercontent.com/oscarlosu-lab/USBAnywhere-Server/ma
 ---
 
 ## 🎛️ USBAnywhere Control Suite (`usbanywhere-ctl`)
+
+For this native Mac replacement, use USBAnywhere.app or the documented `--control`
+CLI. The shared Control Suite's Mac adapter is pending; its old service paths and
+commands do not manage this implementation. See the [integration plan](docs/brainstorms/2026-10-26-native-macos-upstream-integration.md).
+The commands below describe the upstream tool, including its Linux support.
 
 Both macOS and Linux installations include the **USBAnywhere Control Suite** (`usbanywhere-ctl`), a unified, zero-dependency interactive TUI dashboard and CLI management tool:
 
@@ -109,7 +114,7 @@ usbanywhere-ctl logs
 | Component | Platform / Role | Description |
 |---|---|---|
 | **[USBAnywhere Client](https://github.com/oscarlosu-lab/USBAnywhere)** | 🖥️ Windows 10/11 (x64 / ARM64) | Connect to remote USB devices with WHQL drivers & WSK engine |
-| **[USBAnywhere Server](https://github.com/oscarlosu-lab/USBAnywhere-Server)** | 🌐 Windows & 🍎 macOS | Desktop USB/IP server with GUI (Windows) & Swift daemon (macOS) |
+| **[USBAnywhere Server](https://github.com/oscarlosu-lab/USBAnywhere-Server)** | 🌐 Windows & 🍎 macOS | Desktop USB/IP server with Windows GUI and native Swift Mac app/service |
 | **[USBAnywhere Android](https://github.com/oscarlosu-lab/USBAnywhere-Android)** | 📱 Android & Android TV | Rootless USB/IP server, Sunshine handoff & DualSense haptics |
 | **[Linux Server Script](https://github.com/oscarlosu-lab/USBAnywhere/blob/main/scripts/install-server.sh)** | 🐧 Linux & Raspberry Pi | 1-Click kernel USB/IP server auto-bind daemon |
 | **[Official Website](https://oscarlosu-lab.github.io/USBAnywhere/)** | 🌍 Web Portal | Interactive guides, documentation & download hub |
@@ -119,7 +124,7 @@ usbanywhere-ctl logs
 ## ⚙️ Requirements
 
 - **Windows**: Windows 10/11 (x64), Administrator privileges, TCP port 3240.
-- **macOS**: macOS 12 Monterey or newer (Apple Silicon M1/M2/M3/M4 or Intel x86_64), TCP port 3240.
+- **macOS**: macOS 13 Ventura or newer (Apple Silicon M1/M2/M3/M4 or Intel x86_64), TCP port 3240.
 
 ## 📄 License
 
@@ -130,3 +135,5 @@ See [LICENSE](LICENSE) for full legal terms and conditions.
 ---
 
 Developed by [oscarlosu-lab](https://github.com/oscarlosu-lab)
+
+Native macOS server and app by [Denis Arnst (Sapd)](https://github.com/Sapd).

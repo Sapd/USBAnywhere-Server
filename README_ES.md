@@ -8,7 +8,7 @@
 
 Una suite de servidor de escritorio unificada que combina:
 - **Windows**: Servidor gráfico moderno en .NET 9.0 (WPF) con wrapper sobre [usbipd-win](https://github.com/dorssel/usbipd-win).
-- **macOS**: Demonio nativo y CLI en Swift con IOKit en espacio de usuario, con binarios universales (Apple Silicon M1/M2/M3/M4 e Intel).
+- **macOS**: Servidor Swift con IOUSBHost, CLI y aplicación SwiftUI. Validación física actual en Apple Silicon.
 
 Parte del **[Ecosistema de Código Abierto USBAnywhere v3.0+](https://github.com/oscarlosu-lab/USBAnywhere)**.
 
@@ -28,7 +28,7 @@ Parte del **[Ecosistema de Código Abierto USBAnywhere v3.0+](https://github.com
 - 🖥️ **Soporte de Servidor Windows y 🍎 macOS** — Comparte periféricos desde tu PC Windows o tu Mac hacia cualquier cliente de red local, Wi-Fi o VPN.
 - 🎮 **Ideal para Joysticks, SimRacing y Gaming** — Reenvía palancas de vuelo, volantes, mandos, tarjetas de sonido/DAC y adaptadores serie con mínima latencia.
 - 🔧 **Cero Configuración en Windows** — Instalación automatizada de drivers oficiales `usbipd-win` en el primer arranque.
-- ⚡ **Auto-Instalación en 1 Clic en macOS** — Script automatizado vía curl/bash que compila e instala el demonio Swift con servicio en segundo plano `LaunchDaemon`.
+- 🍎 **Aplicación nativa para Mac** — Compartir, reconectar y consultar diagnósticos por dispositivo.
 - 📤 **Compartir en 1 Clic & Compartir Todo** — Conmutadores individuales o botón **⚡ Compartir Todo**.
 - 🔄 **Auto-Bind Persistente** — Vuelve a compartir automáticamente periféricos memorizados por `VID:PID` al reconectarse.
 - 🛡️ **Seguridad y Firewall Reforzado** — Reglas de Windows Firewall acotadas a la subred local; demonio macOS seguro.
@@ -48,18 +48,11 @@ Parte del **[Ecosistema de Código Abierto USBAnywhere v3.0+](https://github.com
 
 ## 🍎 Inicio Rápido — Servidor macOS
 
-En tu Mac (Apple Silicon o Intel), abre la **Terminal** y ejecuta:
+Servidor nativo en Swift y aplicación SwiftUI en la barra de menús. Compila desde
+este repositorio y configura explícitamente los dispositivos que deseas compartir.
+Consulta [README de macOS](src/USBAnywhere.Server.Mac/README.md) para las instrucciones
+actualizadas y limitaciones. No se instala un binario universal desde una URL.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/oscarlosu-lab/USBAnywhere-Server/main/scripts/install-server-mac.sh | sudo bash
-```
-
-Para listar los periféricos y verificar el estado:
-```bash
-usbanywhere-server-mac list
-```
-
-Consulta el [Manual de macOS en Español](docs/USAGE_MACOS_ES.md) o en [Inglés](docs/USAGE_MACOS_EN.md) para más detalles.
 
 ---
 
@@ -74,6 +67,11 @@ curl -fsSL https://raw.githubusercontent.com/oscarlosu-lab/USBAnywhere-Server/ma
 ---
 
 ## 🎛️ Suite de Control USBAnywhere (`usbanywhere-ctl`)
+
+Para esta implementación nativa de Mac, usa USBAnywhere.app o la CLI `--control`.
+La adaptación de la Suite de Control está pendiente; sus rutas y comandos antiguos
+no gestionan este servicio. Consulta el [plan de integración](docs/brainstorms/2026-10-26-native-macos-upstream-integration.md).
+Los comandos siguientes describen la herramienta upstream, incluido Linux.
 
 Tanto en macOS como en Linux se instala automáticamente la **Suite de Control USBAnywhere** (`usbanywhere-ctl`), una herramienta interactiva con interfaz TUI y CLI sin dependencias externas:
 
@@ -119,7 +117,7 @@ usbanywhere-ctl logs
 ## ⚙️ Requisitos
 
 - **Windows**: Windows 10/11 (x64), permisos de Administrador, puerto TCP 3240.
-- **macOS**: macOS 12 Monterey o superior (Apple Silicon M1/M2/M3/M4 o Intel x86_64), puerto TCP 3240.
+- **macOS**: macOS 13 Ventura o superior (Apple Silicon M1/M2/M3/M4 o Intel x86_64), puerto TCP 3240.
 
 ## 📄 Licencia
 
@@ -130,3 +128,5 @@ Consulta el archivo [LICENSE](LICENSE) para conocer los términos completos.
 ---
 
 Desarrollado por [oscarlosu-lab](https://github.com/oscarlosu-lab)
+
+Servidor nativo para macOS y aplicación por [Denis Arnst (Sapd)](https://github.com/Sapd).

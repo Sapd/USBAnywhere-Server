@@ -1,34 +1,15 @@
 // swift-tools-version: 5.9
-// The swift-tools-version declares the minimum version of Swift required to build this package.
-
+// Native macOS implementation and support: Denis Arnst (Sapd) — https://github.com/Sapd
+// USBAnywhere project: oscarlosu-lab (SnakeFoxu) — https://github.com/oscarlosu-lab
+// Licensed under GPL-3.0; see the repository LICENSE.
 import PackageDescription
-
-let package = Package(
-    name: "USBAnywhereServerMac",
-    platforms: [
-        .macOS(.v12)
-    ],
-    products: [
-        .executable(
-            name: "usbanywhere-server-mac",
-            targets: ["USBAnywhereServerMac"]
-        )
-    ],
-    dependencies: [],
-    targets: [
-        .executableTarget(
-            name: "USBAnywhereServerMac",
-            dependencies: [],
-            path: "Sources",
-            linkerSettings: [
-                .linkedFramework("IOKit"),
-                .linkedFramework("CoreFoundation")
-            ]
-        ),
-        .testTarget(
-            name: "USBAnywhereServerMacTests",
-            dependencies: ["USBAnywhereServerMac"],
-            path: "Tests"
-        )
-    ]
-)
+let package = Package(name: "USBAnywhereMac", platforms: [.macOS(.v13)], products: [
+    .executable(name: "usbanywhere-server-mac", targets: ["USBAnywhereDaemon"]),
+    .executable(name: "USBAnywhereApp", targets: ["USBAnywhereApp"])
+], targets: [
+    .target(name: "ExceptionGuard", publicHeadersPath: "include"),
+    .target(name: "USBAnywhereCore", dependencies: ["ExceptionGuard"], linkerSettings: [.linkedFramework("IOUSBHost"), .linkedFramework("IOKit")]),
+    .executableTarget(name: "USBAnywhereDaemon", dependencies: ["USBAnywhereCore"]),
+    .executableTarget(name: "USBAnywhereApp", dependencies: ["USBAnywhereCore"]),
+    .testTarget(name: "USBAnywhereCoreTests", dependencies: ["USBAnywhereCore"])
+])

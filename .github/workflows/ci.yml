@@ -30,6 +30,13 @@ jobs:
       - name: Run Unit Tests (54 xUnit Tests)
         run: dotnet test USBAnywhere-Server.sln -c Release --no-build --verbosity normal
 
+      - name: Test Mac-client discovery and reconnect worker
+        shell: powershell
+        run: |
+          src/USBAnywhere.Server.Mac/WindowsClient/test-discovery.ps1
+          src/USBAnywhere.Server.Mac/WindowsClient/test-reconnect-worker.ps1
+          src/USBAnywhere.Server.Mac/WindowsClient/test-install-reconnect.ps1
+
   build-and-test-macos:
     name: Build & Unit Tests (Swift macOS Apple Silicon)
     runs-on: macos-latest
@@ -44,20 +51,32 @@ jobs:
           swift build -c release
           swift test
 
-      - name: Verify CLI Execution & IOKit Device Enumeration
+      - name: Verify CLI and package the Mac app
         run: |
-          cd src/USBAnywhere.Server.Mac
-          swift run usbanywhere-server-mac help
-          swift run usbanywhere-server-mac list
+          src/USBAnywhere.Server.Mac/build.sh
+          src/USBAnywhere.Server.Mac/build/usbanywhere-server-mac --help
+          src/USBAnywhere.Server.Mac/build/usbanywhere-server-mac list
 
-      - name: Live TCP Loopback Test (Protocol Handshake on Port 3240)
+      - name: Live loopback protocol checks (no hardware capture)
         run: |
-          cd src/USBAnywhere.Server.Mac
-          swift run usbanywhere-server-mac serve --port 3240 &
-          SERVER_PID=$!
-          sleep 3
-          python3 ../../tests/test_live_server_macos.py
-          kill $SERVER_PID
+          python3 tests/test_live_server_macos.py src/USBAnywhere.Server.Mac/build/usbanywhere-server-mac
+
+      - name: Installer rollback checks (isolated filesystem)
+        run: python3 -m unittest discover -s tests -p test_install_server_mac.py -v
+
+      - name: Package development DMG and ZIP
+        env:
+          SKIP_BUILD: '1'
+        run: src/USBAnywhere.Server.Mac/package.sh
+
+      - name: Save development installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: USBAnywhere-macOS-development
+          path: |
+            src/USBAnywhere.Server.Mac/build/*-dev.dmg
+            src/USBAnywhere.Server.Mac/build/*-dev.zip
+            src/USBAnywhere.Server.Mac/build/*.sha256
 
       - name: Verify Control Suite (usbanywhere-ctl) on macOS
         run: |

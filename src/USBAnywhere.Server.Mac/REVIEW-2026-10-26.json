@@ -1,0 +1,193 @@
+[
+  {
+    "lens": "adversarial",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Session.swift:170",
+    "trigger_condition": "Two requests are pending on the same endpoint and Windows unlinks only one.",
+    "guard_snippet": "Track native requests individually, or serialize submissions per endpoint so aborting a pipe cannot cancel unrelated submitted requests.",
+    "potential_consequence": "IOUSBHostPipe.abort aborts all pending requests on that pipe. Other Windows requests unexpectedly complete with cancellation, potentially losing queued input or output.",
+    "disposition": "Fixed: one native request per endpoint; UNLINK cannot abort another submitted request. Fake-callback coverage plus physical verification planned."
+  },
+  {
+    "lens": "adversarial",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Session.swift:159\u2013170",
+    "trigger_condition": "Windows unlinks a pending endpoint-zero control request.",
+    "guard_snippet": "Add cancellation for device requests and retain their resource accounting until native completion or confirmed cancellation.",
+    "potential_consequence": "Control requests never receive job.pipe, so unlink acknowledges cancellation without cancelling native work. The control operation can still execute. Repeated submit/unlink pairs also evade the pending-count and memory limits while callbacks retain their buffers.",
+    "disposition": "Fixed: endpoint-zero native abort and accounting retained through completion, including sequence reuse. Count/byte-limit tests added."
+  },
+  {
+    "lens": "adversarial",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Session.swift:60\u201367",
+    "trigger_condition": "A submitted request sets URB_ZERO_PACKET or URB_SHORT_NOT_OK in the transfer flags at header offset 20.",
+    "guard_snippet": "Parse and implement the supported flags: append the required terminating zero-length bulk packet and report an error for a prohibited short read; explicitly reject unsupported flags.",
+    "potential_consequence": "Transfer flags are never read. A bulk device waiting for a terminating packet can stall, and a short response requiring an error is reported as successful.",
+    "disposition": "Fixed: SHORT_NOT_OK returns -121; aligned bulk OUT appends ZLP; unsupported flag semantics return -95. Tests cover ordering and errors."
+  },
+  {
+    "lens": "adversarial",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Session.swift:144\u2013146",
+    "trigger_condition": "A legitimate bulk request remains pending for more than five seconds, such as an idle bulk input stream.",
+    "guard_snippet": "Keep bulk requests pending until completion, cancellation, or disconnection instead of imposing an unconditional five-second completion timeout.",
+    "potential_consequence": "The server injects ETIMEDOUT into a healthy connection even though Windows did not cancel the request or specify this timeout.",
+    "disposition": "Fixed: bulk and interrupt completion timeout is zero; socket/frame failure deadlines remain separate."
+  },
+  {
+    "lens": "adversarial",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Session.swift:109\u2013114",
+    "trigger_condition": "Windows sends SET_CONFIGURATION for the already-selected configuration to reset the device\u2019s interfaces and endpoints.",
+    "guard_snippet": "Perform the configuration reset and rebuild native interfaces/pipes, or reproduce its required endpoint reset semantics before acknowledging success.",
+    "potential_consequence": "The request succeeds only on the wire. Existing endpoint halts, data toggles, and device state remain unchanged, so driver recovery can fail while Windows believes the reset succeeded.",
+    "disposition": "Fixed: SET_CONFIGURATION performs native configure and rebuilds interfaces/pipes; failures terminate the session for clean reimport. SET_INTERFACE(0) also performs a per-interface native reset."
+  },
+  {
+    "lens": "adversarial",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Target.swift:79\u201380",
+    "trigger_condition": "A remembered device reconnects with changed descriptors or negotiated speed\u2014for example, a USB 3 device moves to a USB 2 port.",
+    "guard_snippet": "Associate cached identity with the physical registry entry and refresh it after removal/reconnection while preserving the target\u2019s bus ID.",
+    "potential_consequence": "ensureIdentity permanently reuses the first identity. Discovery and import can advertise the previous speed, configuration, interface classes, and device revision while forwarding requests to the newly enumerated device.",
+    "disposition": "Fixed: registry-entry identity invalidates stale descriptors, including direct replacement without an observed absent poll; capture rejects an unexpected registry entry."
+  },
+  {
+    "lens": "adversarial",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/DeviceConfiguration.swift:13\u201320",
+    "trigger_condition": "App-based setup migrates an existing service using the supported five-argument legacy configuration.",
+    "guard_snippet": "Validate and preserve legacy location-bound targets without converting their empty labels into the named-target argument format.",
+    "potential_consequence": "Migration writes a target with an empty label, but subsequent startup reconstructs six arguments and rejects that label. The installer replaces the working service with one that repeatedly exits.",
+    "disposition": "Fixed: catalog validation directly supports legacy empty labels, preserves stable slots and appends named devices; migration regression tests added."
+  },
+  {
+    "lens": "adversarial",
+    "location": "scripts/install-server-mac.sh:13\u201324",
+    "trigger_condition": "targets.json already exists and the installer receives an otherwise valid extended or changed explicit target list.",
+    "guard_snippet": "Validate and reconcile the proposed startup targets with the saved catalog before stopping the existing service; preserve catalog order when appending targets.",
+    "potential_consequence": "--validate checks only the command arguments. Installation stops the working service and replaces its configuration, after which USBServer.run rejects the saved catalog because it does not contain the new startup list as its exact prefix.",
+    "disposition": "Fixed: read-only catalog/preferences preflight before service stop, startup suffix preservation, transactional rollback and health checks; installer failure tests added."
+  },
+  {
+    "lens": "adversarial",
+    "location": "src/USBAnywhere.Server.Mac/WindowsClient/install-reconnect-client.ps1:4",
+    "trigger_condition": "Installation receives a syntactically accepted explicit list such as 1-1,1-1, 1-0, or 1-99.",
+    "guard_snippet": "Validate uniqueness and the supported range 1-1 through 1-16 before stopping or replacing the existing scheduled task.",
+    "potential_consequence": "The installer reports success after replacing a working configuration. Duplicate IDs make the helper terminate immediately; out-of-range IDs cause perpetual unsuccessful attachment attempts.",
+    "disposition": "Fixed: shared canonical/unique bus-ID validation before task mutation; parser and installer tests added."
+  },
+  {
+    "lens": "adversarial",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Server.swift:96\u2013103",
+    "trigger_condition": "An existing sharing.json cannot be read or decoded after devices have been explicitly unshared.",
+    "guard_snippet": "Distinguish an absent preferences file from an unreadable or invalid existing file; fail startup visibly or disable sharing until preferences are repaired.",
+    "potential_consequence": "Both errors are silently ignored, and every Target retains its default enabled = true. Restarting the service therefore re-exports devices the user had disabled.",
+    "disposition": "Fixed: absent preferences use defaults, but malformed/unreadable existing files abort visibly before listeners or catalog replacement."
+  },
+  {
+    "lens": "edge-case-hunter",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/DeviceConfiguration.swift:13-20",
+    "trigger_condition": "Adding devices or migrating network settings from the supported five-argument legacy configuration",
+    "guard_snippet": "validateLegacyTargetsWithoutRequiringNonemptyLabels(saved); validateNamedTargets(saved)",
+    "potential_consequence": "Empty legacy labels reject additions; network-only migration writes a catalog the daemon cannot load.",
+    "disposition": "Fixed by legacy-aware catalog validation and migration tests."
+  },
+  {
+    "lens": "edge-case-hunter",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Session.swift:159-170",
+    "trigger_condition": "Repeatedly submit and unlink endpoint-zero requests before their native callbacks finish",
+    "guard_snippet": "retainNativeInflightBudget(job); if job.endpoint == 0 { abortControlRequests() }; releaseBudgetOnlyInNativeCallback(job)",
+    "potential_consequence": "Cancelled native requests retain buffers outside admission accounting, permitting memory exhaustion.",
+    "disposition": "Fixed by native control cancellation with retained count/buffer budget until callback."
+  },
+  {
+    "lens": "edge-case-hunter",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Session.swift:170",
+    "trigger_condition": "Unlink one transfer while other transfers remain pending on the same pipe",
+    "guard_snippet": "abortPipe(); for other in affectedTransfers where other !== job { resubmitWithoutCompleting(other) }",
+    "potential_consequence": "Pipe-wide abort cancels unrelated transfers and reports unsolicited cancellation errors to Windows.",
+    "disposition": "Fixed by serialized per-endpoint native submissions, queued cancellation and callback-order tests."
+  },
+  {
+    "lens": "edge-case-hunter",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Session.swift:142-146",
+    "trigger_condition": "Bulk OUT requests require URB_ZERO_PACKET and contain a packet-aligned payload",
+    "guard_snippet": "if flags & 0x40 != 0 && length % maxPacketSize == 0 { enqueueTrailingZeroLengthPacket() }",
+    "potential_consequence": "Ignoring transfer flags omits required termination packets, leaving device commands incomplete.",
+    "disposition": "Fixed by explicit transfer-flag semantics and bulk terminating zero-length packet tests."
+  },
+  {
+    "lens": "edge-case-hunter",
+    "location": "scripts/install-server-mac.sh:24-30",
+    "trigger_condition": "Any installation step fails after the working service has been unloaded",
+    "guard_snippet": "stageAndValidateAllArtifacts; trap restorePreviousInstallation EXIT; stopService; commitArtifacts; startAndVerifyService; trap - EXIT",
+    "potential_consequence": "The previously working service remains stopped or replaced without automatic recovery.",
+    "disposition": "Fixed by staged Mac installation and rollback of binary/plist/app/catalog/service, verified by isolated failure injection."
+  },
+  {
+    "lens": "edge-case-hunter",
+    "location": "src/USBAnywhere.Server.Mac/WindowsClient/install-reconnect-client.ps1:16-24",
+    "trigger_condition": "A later file copy fails after earlier executable or library files were replaced",
+    "guard_snippet": "Copy-AllFilesToStaging; Validate-StagedFiles; Stop-ScheduledTask; Swap-InstallationWithRollback; Start-ScheduledTask",
+    "potential_consequence": "Restarting the old task executes a mixed installation that may no longer reconnect.",
+    "disposition": "Fixed by full staged Windows directory swaps and task/file rollback, verified on Windows using real temporary files and mocked task operations."
+  },
+  {
+    "lens": "verification-gap",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/DeviceConfiguration.swift:20",
+    "trigger_condition": "A supported five-argument legacy configuration is persisted and subsequently validated as a saved catalog.",
+    "guard_snippet": "Preserve compatibility for a TargetConfig whose label is empty; verify that saving and reloading the targets from a five-argument DaemonConfig succeeds without changing its location-based identity.",
+    "potential_consequence": "validateSavedTargets always reconstructs the four-fields-per-device argument form, which rejects the empty legacy label. preserveStartupDevices writes that legacy catalog before the installer replaces the service configuration with network-only arguments; the restarted daemon then rejects targets.json and exits. Adding another device to an existing legacy configuration also fails this validation. I executed the exact extracted TargetConfig, DaemonConfig and validateSavedTargets definitions through Swift: initial legacy parsing succeeded, while validation against both an empty base and the original legacy base threw 'Invalid identity label'.",
+    "gap_shape": "other",
+    "consumer": "Network-only GUI service migration through scripts/install-server-mac.sh:21 and saved-catalog startup at src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Server.swift:91.",
+    "evidence": "CoreTests.swift:44 verifies legacy parsing only. PlugAndPlayTests.swift:37 tests catalog migration using named targets only. Neither combines those supported behaviors.",
+    "disposition": "Closed: legacy persistence/startup/preflight compatibility tests include empty labels, appended devices and catalog reconciliation."
+  },
+  {
+    "lens": "verification-gap",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Server.swift:284",
+    "trigger_condition": "Sharing-state persistence fails while processing an authorized unshare request.",
+    "guard_snippet": "Force the sharing.json write to fail and assert an unsuccessful reply, unchanged enabled state, and an uninterrupted existing connection.",
+    "potential_consequence": "Moving target.setEnabled before the persistence attempt would disconnect the device even though the GUI receives a failure and the saved configuration still enables it. None of the tests I read would fail for this regression: the connection-isolation test calls Target.setEnabled directly and bypasses the write-before-effect contract.",
+    "gap_shape": "regression-gap",
+    "consumer": "The GUI sharing switch calling SharingModel.action at src/USBAnywhere.Server.Mac/Sources/USBAnywhereApp/Application.swift:56.",
+    "evidence": "CoreTests.swift:158\u2013170 checks direct Target.setEnabled behavior; CoreTests.swift:172\u2013182 checks rejected control requests. Whole-repository symbol/reference searches for handleControl, Paths.state and sharing-state persistence found no test of an authorized share/unshare request or its write-failure branch. The loopback test runs --protocol-test, which bypasses persisted settings and local controls.",
+    "disposition": "Closed: authorized write-failed unshare asserts failure, unchanged sharing and a usable existing connection; successful persistence/restart also covered."
+  },
+  {
+    "lens": "verification-gap",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Control.swift:71",
+    "trigger_condition": "The control listener stops forwarding the actual peer UID to the authorization handler.",
+    "guard_snippet": "Exercise a framed request through the local socket and verify that a non-console, non-root peer cannot mutate sharing; also verify that peer-credential lookup failure does not dispatch a privileged request.",
+    "potential_consequence": "Replacing the kernel-derived UID passed to handler with 0 would authorize every local socket client while all current authorization tests still pass. Those tests supply an artificial UID directly to handleControl and therefore cannot protect the boundary that supplies that UID.",
+    "gap_shape": "regression-gap",
+    "consumer": "Daemon control dispatch at src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Server.swift:134\u2013138, reached by the GUI and --control CLI.",
+    "evidence": "Read CoreTests.swift:172\u2013182 and PlugAndPlayTests.swift:64\u201368: both call handleControl directly. Repository-wide searches for ControlServer, LocalControl and handleControl found no test executing the socket credential boundary. tests/test_live_server_macos.py uses the separate TCP-only protocol-test mode.",
+    "disposition": "Closed: framed socketpair dispatch uses actual kernel UID; unauthorized mutations and credential-lookup failure are observed."
+  },
+  {
+    "lens": "verification-gap",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Session.swift:170",
+    "trigger_condition": "CMD_UNLINK acknowledges cancellation but no longer cancels the outstanding native USB transfer.",
+    "guard_snippet": "Verify cancellation of a genuinely pending transfer: after the unlink reply, the native operation must stop consuming input, a late completion must not produce RET_SUBMIT, and subsequent input requests must remain usable.",
+    "potential_consequence": "Deleting the native abort at this line leaves the cancellation race test green because its Transfer.pipe is always nil. A Windows unlink could consequently report successful cancellation while an interrupt request remains active indefinitely and continues holding its buffer/native operation.",
+    "gap_shape": "regression-gap",
+    "consumer": "Imported Windows USB/IP sessions dispatching CMD_UNLINK at src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Session.swift:193.",
+    "evidence": "CoreTests.swift:101\u2013130 constructs a zero-length Transfer manually, never assigns pipe, and checks pending removal and reply headers. Repository-wide searches for Session, unlink and CapturedDevice found no other native-cancellation test. I also read test-recovery.ps1 and test-stall.ps1: they exercise connection faults and endpoint halt recovery, respectively, but send no CMD_UNLINK.",
+    "disposition": "Closed at injected native-transport boundary: tests assert abort, retained resources, late reply suppression and next-request usability. Physical test added for real pipe cancellation."
+  },
+  {
+    "lens": "verification-gap",
+    "location": "src/USBAnywhere.Server.Mac/WindowsClient/reconnect-client.ps1:55",
+    "trigger_condition": "Automatic discovery parses an export list successfully but the reconnect worker fails to adopt newly discovered devices or retry after a failed attach.",
+    "guard_snippet": "Run bounded worker iterations with controlled client responses: initially no exports, then a new bus ID, a failed attach, and a successful retry. Assert that the new ID is attached and retried using the selected receive mode.",
+    "potential_consequence": "Discarding the parsed list instead of assigning it to devices would leave every automatic worker with its initial empty list. Newly shared Mac devices would never connect, yet the discovery test and normal CI would remain green. Likewise, the parser test cannot detect a worker that stops retrying an attach failure.",
+    "gap_shape": "regression-gap",
+    "consumer": "The persistent SYSTEM reconnect task installed by src/USBAnywhere.Server.Mac/WindowsClient/install-reconnect-client.ps1:27.",
+    "evidence": "test-discovery.ps1:12\u201316 checks only Get-ExportedBusIDs against fixed strings. CI invokes that parser test at .github/workflows/ci.yml:35. Repository-wide searches for reconnect-client and Get-ExportedBusIDs found no test running the worker loop. I read test-reconnect.ps1: it calls usbip.exe directly for explicit attach/detach cycles and therefore bypasses automatic discovery and worker retry.",
+    "disposition": "Closed: actual bounded reconnect worker with fake executable tested on Windows through empty discovery, new-device adoption, failed attach, retry and existing attachment; added to CI."
+  },
+  {
+    "lens": "adversarial",
+    "location": "src/USBAnywhere.Server.Mac/Sources/USBAnywhereCore/Session.swift:117\u2013127 (first fix pass)",
+    "trigger_condition": "An aligned OUT payload completes successfully, but its callback arrives after a configuration/interface/endpoint reset has rebuilt the pipe.",
+    "guard_snippet": "Invalidate reset-affected active and queued requests before native reset. Delayed callbacks must not enqueue an old transfer\u2019s trailing ZLP through a new pipe. Verify this ordering with delayed native completions.",
+    "potential_consequence": "The pre-reset transfer can issue a trailing packet into a new endpoint generation, corrupting device protocol ordering or recovery.",
+    "disposition": "Follow-up fix: cancel affected queued work and invalidate native-active work before reset, retaining native resource accounting through callback; delayed-success reset/ZLP regression coverage added."
+  }
+]

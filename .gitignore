@@ -79,3 +79,7 @@ backups/
 
 __pycache__/
 *.pyc
+
+# Native Mac build outputs
+src/USBAnywhere.Server.Mac/.build/
+src/USBAnywhere.Server.Mac/build/

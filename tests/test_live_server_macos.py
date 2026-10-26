@@ -1,77 +1,83 @@
 #!/usr/bin/env python3
-"""
-USBAnywhere Server for macOS - Live TCP End-to-End Loopback Test
-Verifies that the compiled Swift binary boots on macOS Darwin, binds port 3240,
-and responds correctly to binary USB/IP protocol handshakes over TCP.
-"""
+# Native macOS implementation and support: Denis Arnst (Sapd) — https://github.com/Sapd
+# USBAnywhere project: oscarlosu-lab (SnakeFoxu) — https://github.com/oscarlosu-lab
+# Licensed under GPL-3.0; see the repository LICENSE.
+"""Run the real TCP server with zero USB targets and isolated loopback-only test mode."""
+import json
 import socket
 import struct
+import subprocess
 import sys
 import time
 import unittest
 
-def verify_live_usbip_handshake(host="127.0.0.1", port=3240):
-    print(f"Connecting to live macOS USB/IP server at {host}:{port}...")
-    s = None
-    for attempt in range(1, 6):
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(5.0)
-            s.connect((host, port))
-            print(f"Connected on attempt {attempt}!")
-            break
-        except Exception as e:
-            print(f"Attempt {attempt}/5 failed ({e}), retrying in 1s...")
-            time.sleep(1)
-            if attempt == 5:
-                raise ConnectionError(f"Could not connect to macOS server on port {port}") from e
+BINARY = sys.argv[1] if len(sys.argv) > 1 else 'src/USBAnywhere.Server.Mac/build/usbanywhere-server-mac'
 
-    # USB/IP OP_REQ_DEVLIST packet:
-    # version: uint16 = 0x0111
-    # command: uint16 = 0x8005
-    # status: uint32 = 0
-    req = struct.pack(">HHI", 0x0111, 0x8005, 0)
-    s.sendall(req)
-    print("Sent OP_REQ_DEVLIST (0x8005) packet...")
 
-    # Read OP_REP_DEVLIST Header (8 bytes):
-    header = s.recv(8)
-    if len(header) < 8:
-        raise ValueError(f"Expected 8 header bytes, received {len(header)}")
+def exact(sock, count):
+    data = bytearray()
+    while len(data) < count:
+        piece = sock.recv(count - len(data))
+        if not piece:
+            raise EOFError('incomplete USB/IP reply')
+        data.extend(piece)
+    return bytes(data)
 
-    version, command, status = struct.unpack(">HHI", header)
-    print(f"Received Header: Version=0x{version:04X}, Command=0x{command:04X}, Status={status}")
 
-    assert version == 0x0111, f"Unexpected version: 0x{version:04X}"
-    assert command == 0x0005, f"Unexpected command: 0x{command:04X}"
-    assert status == 0, f"Non-zero status: {status}"
+class LiveProtocol(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.process = subprocess.Popen([BINARY, '--protocol-test'])
+        for _ in range(100):
+            if cls.process.poll() is not None:
+                raise RuntimeError('daemon failed to start')
+            try:
+                with socket.create_connection(('127.0.0.1', 3240), timeout=.2):
+                    return
+            except OSError:
+                time.sleep(.05)
+        cls.process.terminate()
+        cls.process.wait(timeout=15)
+        raise RuntimeError('listener did not become ready')
 
-    # Read number of devices (uint32)
-    ndev_bytes = s.recv(4)
-    if len(ndev_bytes) < 4:
-        raise ValueError(f"Expected 4 ndev bytes, received {len(ndev_bytes)}")
+    @classmethod
+    def tearDownClass(cls):
+        cls.process.terminate()
+        cls.process.wait(timeout=15)
 
-    ndev = struct.unpack(">I", ndev_bytes)[0]
-    print(f"Server reports {ndev} exported USB devices.")
-    s.close()
-    return True
+    def connect(self):
+        sock = socket.create_connection(('127.0.0.1', 3240), timeout=8)
+        self.addCleanup(sock.close)
+        return sock
 
-class TestMacOSLiveServer(unittest.TestCase):
-    def test_protocol_packet_construction(self):
-        # Always testable offline
-        req = struct.pack(">HHI", 0x0111, 0x8005, 0)
-        self.assertEqual(len(req), 8)
-        version, command, status = struct.unpack(">HHI", req)
-        self.assertEqual(version, 0x0111)
-        self.assertEqual(command, 0x8005)
-        self.assertEqual(status, 0)
+    def test_fragmented_list(self):
+        sock = self.connect()
+        for byte in struct.pack('>HHI', 0x111, 0x8005, 0):
+            sock.sendall(bytes([byte]))
+        self.assertEqual(exact(sock, 12), struct.pack('>HHII', 0x111, 5, 0, 0))
 
-if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "--live":
-        verify_live_usbip_handshake()
-    else:
-        # Run live if server responds, otherwise run unit tests
-        try:
-            verify_live_usbip_handshake()
-        except Exception:
-            unittest.main()
+    def test_absent_device_import_fails(self):
+        sock = self.connect()
+        sock.sendall(struct.pack('>HHI', 0x111, 0x8003, 0) + b'1-1'.ljust(32, b'\0'))
+        self.assertEqual(exact(sock, 8), struct.pack('>HHI', 0x111, 3, 1))
+
+    def test_bad_version_rejected(self):
+        sock = self.connect()
+        sock.sendall(struct.pack('>HHI', 0x110, 0x8005, 0))
+        self.assertEqual(sock.recv(1), b'')
+
+    def test_partial_request_deadline_and_listener_survives(self):
+        sock = self.connect()
+        sock.sendall(b'\x01')
+        self.assertEqual(sock.recv(1), b'')
+        self.assertIsNone(self.process.poll())
+        self.test_fragmented_list()
+
+    def test_unknown_bus_refused(self):
+        sock = self.connect()
+        sock.sendall(struct.pack('>HHI', 0x111, 0x8003, 0) + b'1-9'.ljust(32, b'\0'))
+        self.assertEqual(exact(sock, 8), struct.pack('>HHI', 0x111, 3, 1))
+
+
+if __name__ == '__main__':
+    unittest.main(argv=[sys.argv[0]])
