@@ -46,10 +46,6 @@ installing a driver). Driver installation requires Windows administrator access.
 - `test-unlink.ps1`: 100 pairs of same-endpoint VKB reads, unlinking the first
   while requiring the second and a final physical read to succeed. Stop retry and
   detach only the left stick first, restoring retry in `finally`.
-- `test-network.ps1`: experimental firewall-cut test. Requires proof the block is
-  effective; it did not establish an actual outage on the development PC.
-- `verify-xinput.ps1`: generic system XInput probe; Steam input can work without
-  exposing a system-wide XInput slot to an SSH session.
 
 A successful read of stationary/cached joystick state is not proof of movement,
 network recovery or end-to-end latency. Tobii/Steam application input and long

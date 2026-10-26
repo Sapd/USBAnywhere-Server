@@ -35,7 +35,7 @@ cp AUTHORS.md "$stage/Credits.txt"
 source_root=build/SourceDistribution/USBAnywhere-Server
 rm -rf build/SourceDistribution
 mkdir -p "$source_root/src/USBAnywhere.Server.Mac" "$source_root/scripts"
-for item in Package.swift Sources Tests Artwork WindowsClient build.sh package.sh README.md AUTHORS.md VALIDATION.md DISTRIBUTION.md REVIEW-2026-10-26.md REVIEW-2026-10-26.json; do
+for item in Package.swift Sources Tests Artwork WindowsClient build.sh package.sh README.md AUTHORS.md DISTRIBUTION.md; do
     ditto "$item" "$source_root/src/USBAnywhere.Server.Mac/$item"
 done
 cp ../../scripts/install-server-mac.sh ../../scripts/uninstall-server-mac.sh ../../scripts/usbanywhere-ctl "$source_root/scripts/"

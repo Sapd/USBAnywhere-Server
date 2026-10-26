@@ -167,7 +167,7 @@ registry-entry identity refresh, legacy migration, failed persistence, real sock
 credentials, per-endpoint cancellation and retained native buffers. Transfer tests
 also cover short-read flags, terminating bulk packets and reset-generation ordering.
 Installer failure tests and a bounded Windows worker integration test run in CI.
-See [validation](VALIDATION.md) and the [full review](REVIEW-2026-10-26.md). `ExceptionGuard` is a tiny Objective-C exception
+`ExceptionGuard` is a tiny Objective-C exception
 boundary: Swift cannot catch Objective-C exceptions during USB service teardown.
 All forwarding, protocol, lifecycle and UI logic is Swift. Modern and legacy
 Apple endpoint-stall errors map to EPIPE; client clear-halt requests use
@@ -196,8 +196,9 @@ separate validation work.
 The app includes a multi-resolution Finder/Dock icon and an adaptive monochrome
 menu-bar template. **Show in Dock** enables Dock visibility; new installs show the Dock icon, while existing saved
 Dock preferences are preserved. Closing the app still does not stop the USB service. See
-[Artwork/GENERATION.md](Artwork/GENERATION.md) for the retained master, exact
-image-generation prompt, editable vector companion and reproducible packaging.
+`Artwork/AppIconMaster.png` for the source app image and `Artwork/MenuBarIcon.svg`
+for the editable menu-bar mark. `Artwork/build-icons.sh` and `make-icons.swift`
+produce the packaged icons from those assets.
 
 Source attribution and contributor scope are recorded in [AUTHORS.md](AUTHORS.md)
 and the implementation headers. Packaged downloads include Credits.txt.
