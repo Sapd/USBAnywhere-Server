@@ -37,7 +37,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 <key>CFBundleExecutable</key><string>USBAnywhere</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>0.1.0</string>
-<key>CFBundleVersion</key><string>4</string>
+<key>CFBundleVersion</key><string>5</string>
 <key>CFBundleIconFile</key><string>AppIcon</string>
 <key>LSMinimumSystemVersion</key><string>13.0</string>
 <key>LSUIElement</key><true/>
@@ -47,7 +47,8 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 PLIST
 mkdir -p "$app/Contents/Resources/Server"
 cp build/usbanywhere-server-mac "$app/Contents/Resources/Server/"
-cp ../../scripts/install-server-mac.sh "$app/Contents/Resources/Server/"
+cp ../../scripts/usbanywhere-ctl build/usbanywhere-ctl
+cp ../../scripts/install-server-mac.sh build/usbanywhere-ctl "$app/Contents/Resources/Server/"
 if [ -n "${SIGN_IDENTITY:-}" ]; then
     codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$app"
 else

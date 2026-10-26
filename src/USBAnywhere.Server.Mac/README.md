@@ -124,6 +124,42 @@ archive. Launchd startup/fatal stderr: `server.log` in the same directory.
 Uninstall: `sudo sh scripts/uninstall-server-mac.sh`. Logs, settings and rollback
 backup are retained. Disable the app's login startup before uninstalling.
 
+## Shared CLI and service control
+
+Setup also installs the optional `usbanywhere-ctl` command. It requires Python 3
+and no third-party Python packages; everyday app use does not require Python.
+From a checkout you can run `python3 scripts/usbanywhere-ctl` at the server repo
+root. The command reads the same native service and saved catalog as the app:
+
+```sh
+usbanywhere-ctl status --json
+usbanywhere-ctl list
+usbanywhere-ctl share 1-1
+usbanywhere-ctl unshare 1-1
+usbanywhere-ctl reconnect 1-1
+usbanywhere-ctl test
+sudo usbanywhere-ctl start
+sudo usbanywhere-ctl stop
+sudo usbanywhere-ctl restart
+usbanywhere-ctl logs
+```
+
+Sharing/reconnect actions run as the signed-in Mac user and retain the daemon's
+permission checks. Only service start/stop/restart require administrator access.
+Share new devices in the app first; the CLI displays their unconfigured status
+and manages remembered bus IDs. Replugging keeps those IDs stable.
+
+Service commands target `system/local.usbanywhere.macos`; they never launch a
+second daemon or kill unrelated processes. Failed native/launchd operations return
+nonzero. The CLI is installed alongside the helper with a link under `/usr/local/bin`;
+installer rollback restores both existing CLI files and links.
+
+On this allowlisted server the Mac itself cannot act as a network USB/IP client.
+`test` therefore checks the authenticated native control API and reports that
+boundary explicitly. `test --host HOST --port 3240` performs a USB/IP network
+handshake; use it from an allowed client. Neither test proves physical input or
+long-duration tracking stability.
+
 ## Validation and limits
 
 Forty-six native tests cover framing/write deadlines, idle/EOF, stable serials,

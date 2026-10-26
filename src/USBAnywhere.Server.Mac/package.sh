@@ -38,7 +38,7 @@ mkdir -p "$source_root/src/USBAnywhere.Server.Mac" "$source_root/scripts"
 for item in Package.swift Sources Tests Artwork WindowsClient build.sh package.sh README.md AUTHORS.md VALIDATION.md DISTRIBUTION.md REVIEW-2026-10-26.md REVIEW-2026-10-26.json; do
     ditto "$item" "$source_root/src/USBAnywhere.Server.Mac/$item"
 done
-cp ../../scripts/install-server-mac.sh ../../scripts/uninstall-server-mac.sh "$source_root/scripts/"
+cp ../../scripts/install-server-mac.sh ../../scripts/uninstall-server-mac.sh ../../scripts/usbanywhere-ctl "$source_root/scripts/"
 cp ../../LICENSE "$source_root/LICENSE"
 ditto -c -k --keepParent "$source_root" "$stage/Source.zip"
 cat > "$stage/Read Me.txt" <<'README'

@@ -32,11 +32,17 @@ script_dir=$(CDPATH='' cd -- "$(dirname "$0")" && pwd)
 package=${USBANYWHERE_PACKAGE_DIR:-"$script_dir/../src/USBAnywhere.Server.Mac"}
 binary="$package/build/usbanywhere-server-mac"
 test -x "$binary"
+control_source="$package/build/usbanywhere-ctl"
+test -f "$control_source"
+test -s "$control_source"
 # Values are embedded in XML below; permit only the validated identifier alphabet.
 for arg in "$@"; do case "$arg" in ''|*[!0-9a-zA-Z.]*) echo 'Invalid argument' >&2; exit 2;; esac; done
 label=local.usbanywhere.macos
 helper_dir="$root/Library/PrivilegedHelperTools/USBAnywhereMac"
 installed="$helper_dir/usbanywhere-mac"
+control_installed="$helper_dir/usbanywhere-ctl"
+control_bin="$root/usr/local/bin"
+control_link="$control_bin/usbanywhere-ctl"
 plist_dir="$root/Library/LaunchDaemons"
 plist="$plist_dir/$label.plist"
 upstream_plist="$plist_dir/com.usbanywhere.server.plist"
@@ -50,13 +56,14 @@ lock_dir="$root/var/run/usbanywhere-mac-install.lock"
 work_parent=/private/tmp
 if [ "$sandbox" -eq 1 ]; then work_parent=${TMPDIR:-/tmp}; fi
 work=$(mktemp -d "$work_parent/usbanywhere-install.XXXXXX")
-helper_stage='' plist_stage='' app_stage=''
+helper_stage='' plist_stage='' app_stage='' control_stage=''
 locked=0 transaction=0 catalog_changed=0 app_changed=0 upstream_changed=0 backup_created=0
 main_loaded=0 upstream_loaded=0 had_binary=0 had_plist=0 had_targets=0 had_app=0 had_previous=0
 rollback_failed=0
+control_changed=0 had_control=0 had_control_link=0
 
 restore_file() {
-    cp -p "$1" "$2.rollback" && mv -f "$2.rollback" "$2"
+    cp -pP "$1" "$2.rollback" && mv -f "$2.rollback" "$2"
 }
 verify_restored_service() {
     restore_label=$1
@@ -87,6 +94,18 @@ rollback() {
         restore_file "$plist_stage/old" "$plist" || rollback_failed=1
     else
         rm -f "$plist" || rollback_failed=1
+    fi
+    if [ "$control_changed" -eq 1 ]; then
+        if [ "$had_control" -eq 1 ]; then
+            restore_file "$helper_stage/control-old" "$control_installed" || rollback_failed=1
+        else
+            rm -f "$control_installed" || rollback_failed=1
+        fi
+        if [ "$had_control_link" -eq 1 ]; then
+            restore_file "$control_stage/old" "$control_link" || rollback_failed=1
+        else
+            rm -f "$control_link" || rollback_failed=1
+        fi
     fi
     if [ "$app_changed" -eq 1 ]; then
         if [ -e "$app_stage/old" ] || [ -L "$app_stage/old" ]; then
@@ -134,7 +153,7 @@ finish() {
     fi
     if [ "$locked" -eq 1 ]; then rmdir "$lock_dir"; fi
     if [ "$rollback_failed" -eq 0 ]; then
-        for directory in "$helper_stage" "$plist_stage" "$app_stage" "$work"; do
+        for directory in "$helper_stage" "$plist_stage" "$app_stage" "$control_stage" "$work"; do
             if [ -n "$directory" ]; then rm -rf "$directory"; fi
         done
     else
@@ -149,6 +168,7 @@ trap 'exit 143' TERM
 
 # Execute a private staged copy, never the mutable package path, during validation.
 cp "$binary" "$work/server"
+cp "$control_source" "$work/control"
 chmod 755 "$work/server"
 "$work/server" --validate "$@"
 "$work/server" --preflight-install "$@"
@@ -160,14 +180,27 @@ locked=1
 
 if [ "$sandbox" -eq 0 ]; then
     install -d -o root -g wheel -m 755 "$helper_dir" "$log_dir" "$state_dir"
-    mkdir -p "$plist_dir" "$apps_dir"
+    mkdir -p "$plist_dir" "$apps_dir" "$control_bin"
 else
-    mkdir -p "$helper_dir" "$plist_dir" "$log_dir" "$state_dir" "$apps_dir"
+    mkdir -p "$helper_dir" "$plist_dir" "$log_dir" "$state_dir" "$apps_dir" "$control_bin"
 fi
+# Do not treat an existing directory as a file destination during replacement.
+test ! -d "$control_link"
+test ! -d "$control_installed"
+control_stage=$(mktemp -d "$control_bin/.usbanywhere.XXXXXX")
 helper_stage=$(mktemp -d "$helper_dir/.install.XXXXXX")
 plist_stage=$(mktemp -d "$plist_dir/.usbanywhere.XXXXXX")
 cp "$work/server" "$helper_stage/new"
 chmod 755 "$helper_stage/new"
+cp "$work/control" "$helper_stage/control-new"
+chmod 755 "$helper_stage/control-new"
+ln -s "$control_installed" "$control_stage/new"
+if [ -e "$control_installed" ] || [ -L "$control_installed" ]; then
+    cp -pP "$control_installed" "$helper_stage/control-old"; had_control=1
+fi
+if [ -e "$control_link" ] || [ -L "$control_link" ]; then
+    cp -pP "$control_link" "$control_stage/old"; had_control_link=1
+fi
 if [ -e "$installed" ]; then cp -p "$installed" "$helper_stage/old"; had_binary=1; fi
 if [ -e "$plist" ]; then cp -p "$plist" "$plist_stage/old"; had_plist=1; fi
 if [ -e "$targets" ]; then cp -p "$targets" "$work/targets.json"; had_targets=1; fi
@@ -218,6 +251,9 @@ if [ "$main_loaded" -eq 1 ]; then launchctl bootout "system/$label"; fi
 if [ "$upstream_loaded" -eq 1 ]; then launchctl bootout system/com.usbanywhere.server; fi
 mv -f "$helper_stage/new" "$installed"
 mv -f "$plist_stage/new" "$plist"
+control_changed=1
+mv -f "$helper_stage/control-new" "$control_installed"
+mv -f "$control_stage/new" "$control_link"
 if [ -n "$app_stage" ]; then
     app_changed=1
     if [ "$had_app" -eq 1 ]; then mv "$app" "$app_stage/old"; fi

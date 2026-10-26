@@ -138,6 +138,9 @@ func installBundledService(local: String, peer: String) throws {
     at: resources.appendingPathComponent("Server/usbanywhere-server-mac"),
     to: build.appendingPathComponent("usbanywhere-server-mac"))
   try manager.copyItem(
+    at: resources.appendingPathComponent("Server/usbanywhere-ctl"),
+    to: build.appendingPathComponent("usbanywhere-ctl"))
+  try manager.copyItem(
     at: resources.appendingPathComponent("Server/install-server-mac.sh"),
     to: staging.appendingPathComponent("install.sh"))
   // Stage outside Documents so the administrator process does not need broad privacy access.

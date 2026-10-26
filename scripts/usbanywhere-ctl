@@ -2,9 +2,10 @@
 """
 USBAnywhere Control Suite (macOS & Linux)
 Unified management, interactive dashboard, and diagnostic tool for USBAnywhere Server.
-Zero external dependencies. Works out-of-the-box on macOS (Apple Silicon & Intel) and Linux.
+Uses the Python 3 standard library on macOS and Linux; the native Mac app needs no Python.
 
 Copyright (c) 2025-2026 oscarlosu-lab - https://github.com/oscarlosu-lab/USBAnywhere-Server
+Native macOS integration: Denis Arnst (Sapd) — https://github.com/Sapd
 Licensed under GPL v3
 """
 import os
@@ -29,6 +30,92 @@ PORT = 3240
 
 IS_MACOS = platform.system() == "Darwin"
 IS_LINUX = platform.system() == "Linux"
+MAC_LABEL = "local.usbanywhere.macos"
+MAC_PLIST = "/Library/LaunchDaemons/" + MAC_LABEL + ".plist"
+MAC_HELPER = "/Library/PrivilegedHelperTools/USBAnywhereMac/usbanywhere-mac"
+MAC_LOG = "/Library/Logs/USBAnywhereMac/swift-server.log"
+
+
+def mac_control(action="status", busid=None):
+    """Use the native client so socket ownership and peer checks stay in Swift."""
+    if not os.path.isfile(MAC_HELPER):
+        raise RuntimeError("Open USBAnywhere.app and complete Set Up Sharing first")
+    command = [MAC_HELPER, "--control", action]
+    if busid is not None:
+        if not re.fullmatch(r"1-(?:[1-9]|1[0-6])", busid):
+            raise RuntimeError("Choose a remembered bus ID from 1-1 through 1-16")
+        command.append(busid)
+    try:
+        result = subprocess.run(command, capture_output=True, text=True, timeout=10)
+        reply = json.loads(result.stdout)
+    except (OSError, ValueError, subprocess.TimeoutExpired) as error:
+        raise RuntimeError("Could not reach the native sharing service: " + str(error)) from error
+    if not isinstance(reply, dict):
+        raise RuntimeError("Invalid native service response")
+    if result.returncode != 0 or reply.get("ok") is not True:
+        raise RuntimeError(reply.get("message") or result.stderr.strip() or "Native sharing request failed")
+    if action == "status":
+        state = reply.get("status")
+        if not isinstance(state, dict) or not isinstance(state.get("devices"), list) or not state.get("listen"):
+            raise RuntimeError("Invalid native status response")
+    return reply
+
+
+def mac_service(action):
+    """Manage only our registered service; never spawn a second forwarding daemon."""
+    try:
+        if not is_root():
+            result = subprocess.run(["sudo", sys.executable, os.path.realpath(__file__), action])
+            return result.returncode == 0
+        if not os.path.isfile(MAC_PLIST):
+            raise RuntimeError("Open USBAnywhere.app and complete Set Up Sharing first")
+        target = "system/" + MAC_LABEL
+        if action == "stop":
+            loaded = subprocess.run(["launchctl", "print", target], capture_output=True, text=True, timeout=10)
+            if loaded.returncode == 113:
+                print("Native macOS service is already stopped.")
+                return True
+            loaded.check_returncode()
+            subprocess.run(["launchctl", "bootout", target], capture_output=True, text=True,
+                           timeout=20, check=True)
+        else:
+            loaded = subprocess.run(["launchctl", "print", target], capture_output=True, text=True, timeout=10)
+            subprocess.run(["launchctl", "enable", target], capture_output=True, text=True, timeout=10, check=True)
+            if loaded.returncode != 0:
+                subprocess.run(["launchctl", "bootstrap", "system", MAC_PLIST], capture_output=True,
+                               text=True, timeout=20, check=True)
+            # Start an idle registered service, or explicitly restart the running one.
+            command = ["launchctl", "kickstart"] + (["-k"] if action == "restart" else []) + [target]
+            subprocess.run(command, capture_output=True, text=True, timeout=20, check=True)
+        print("Native macOS service " + action + " completed.")
+        return True
+    except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+        print("Service action failed: " + str(error), file=sys.stderr)
+        return False
+
+
+def mac_device_action(action, busid):
+    try:
+        reply = mac_control(action, busid)
+        print(reply.get("message") or "Sharing updated")
+        return True
+    except RuntimeError as error:
+        print(str(error), file=sys.stderr)
+        return False
+
+
+def show_logs(follow=False):
+    if IS_MACOS:
+        command = ["tail", "-f", MAC_LOG] if follow else ["tail", "-n", "30", MAC_LOG]
+    elif IS_LINUX:
+        command = ["journalctl", "-u", "usbipd", "-f"] if follow else ["journalctl", "-u", "usbipd", "-n", "30", "--no-pager"]
+    else:
+        return False
+    try:
+        return subprocess.run(command).returncode == 0
+    except OSError as error:
+        print(str(error), file=sys.stderr)
+        return False
 
 # Terminal ANSI styling
 GREEN = "\033[92m"
@@ -88,21 +175,20 @@ def is_port_open(host="127.0.0.1", port=PORT, timeout=1.0):
 
 def get_service_status():
     """Check background daemon status."""
-    port_active = is_port_open()
-
     if IS_MACOS:
-        plist_path = "/Library/LaunchDaemons/com.usbanywhere.server.plist"
-        installed = os.path.exists(plist_path)
-        out = run_cmd(["launchctl", "list"])
-        running = "com.usbanywhere.server" in out
-        return {
-            "os": "macOS (Apple Silicon / Intel)",
-            "service_manager": "launchd",
-            "installed": installed,
-            "running": running or port_active,
-            "port_active": port_active
-        }
+        status = {"os": "macOS", "service_manager": "launchd",
+                  "installed": os.path.isfile(MAC_PLIST), "running": False,
+                  "port_active": False, "devices": []}
+        try:
+            native = mac_control()["status"]
+            status.update(native)
+            status.update(running=True, port_active=is_port_open(native["listen"]),
+                          lan_ip=native["listen"])
+        except RuntimeError as error:
+            status["error"] = str(error)
+        return status
     elif IS_LINUX:
+        port_active = is_port_open()
         installed = os.path.exists("/etc/systemd/system/usbipd.service") or \
                     os.path.exists("/lib/systemd/system/usbipd.service")
         out = run_cmd(["systemctl", "is-active", "usbipd"])
@@ -119,27 +205,19 @@ def get_service_status():
             "os": platform.system(),
             "service_manager": "unknown",
             "installed": False,
-            "running": port_active,
-            "port_active": port_active
+            "running": is_port_open(),
+            "port_active": is_port_open()
         }
 
 def start_service():
     """Start the USB/IP server service."""
+    if IS_MACOS:
+        return mac_service("start")
     if not is_root():
         print(f"{YELLOW}[!] Superuser privileges required. Re-running with sudo...{RESET}")
         return os.system(f"sudo {sys.executable} {' '.join(sys.argv)}") == 0
 
-    if IS_MACOS:
-        plist = "/Library/LaunchDaemons/com.usbanywhere.server.plist"
-        if os.path.exists(plist):
-            run_cmd(["launchctl", "load", "-w", plist])
-            print(f"{GREEN}✓ macOS service started via launchd.{RESET}")
-            return True
-        else:
-            print(f"{YELLOW}[!] Service plist not found. Running interactive daemon...{RESET}")
-            os.system("usbanywhere-server-mac serve --auto-bind &")
-            return True
-    elif IS_LINUX:
+    if IS_LINUX:
         run_cmd(["systemctl", "restart", "usbipd"])
         print(f"{GREEN}✓ Linux service started via systemd.{RESET}")
         return True
@@ -147,18 +225,13 @@ def start_service():
 
 def stop_service():
     """Stop the USB/IP server service."""
+    if IS_MACOS:
+        return mac_service("stop")
     if not is_root():
         print(f"{YELLOW}[!] Superuser privileges required. Re-running with sudo...{RESET}")
         return os.system(f"sudo {sys.executable} {' '.join(sys.argv)}") == 0
 
-    if IS_MACOS:
-        plist = "/Library/LaunchDaemons/com.usbanywhere.server.plist"
-        if os.path.exists(plist):
-            run_cmd(["launchctl", "unload", "-w", plist])
-        run_cmd(["pkill", "-f", "usbanywhere-server-mac"])
-        print(f"{GREEN}✓ macOS service stopped.{RESET}")
-        return True
-    elif IS_LINUX:
+    if IS_LINUX:
         run_cmd(["systemctl", "stop", "usbipd"])
         run_cmd(["pkill", "-f", "usbipd"])
         print(f"{GREEN}✓ Linux service stopped.{RESET}")
@@ -173,24 +246,18 @@ def list_devices():
     """List local physical USB peripherals."""
     devices = []
     if IS_MACOS:
-        # Use native macOS server CLI if installed
-        bin_path = shutil.which("usbanywhere-server-mac")
-        if bin_path:
-            out = run_cmd([bin_path, "list"])
-            for line in out.splitlines():
-                if line.strip().startswith("["):
+        try:
+            state = mac_control()["status"]
+            for item in state["devices"]:
+                devices.append("[{}] {} ({}) — {}".format(item["id"], item["name"], item["model"], item["state"]))
+            for item in state.get("availableDevices", []):
+                devices.append("[unconfigured {}] {} ({}:{}) — Share in USBAnywhere.app".format(
+                    item["location"], item["name"], item["vendor"], item["product"]))
+        except RuntimeError:
+            # Inventory remains available before first service setup.
+            for line in run_cmd(["system_profiler", "SPUSBDataType"]).splitlines():
+                if "Product ID:" in line:
                     devices.append(line.strip())
-        else:
-            # Fallback to system_profiler
-            out = run_cmd(["system_profiler", "SPUSBDataType"])
-            current = None
-            for line in out.splitlines():
-                line_str = line.strip()
-                if line_str.endswith(":") and not any(k in line_str for k in ["Bus:", "Hub:", "Controller:"]):
-                    current = line_str[:-1]
-                elif "Product ID:" in line_str and current:
-                    devices.append(f"• {current} ({line_str})")
-                    current = None
     elif IS_LINUX:
         bin_path = shutil.which("usbip")
         if bin_path:
@@ -212,17 +279,13 @@ def list_devices():
 
 def share_device(busid):
     """Export a specific USB peripheral by bus ID."""
+    if IS_MACOS:
+        return mac_device_action("share", busid)
     if not is_root():
         print(f"{YELLOW}[!] Superuser privileges required. Re-running with sudo...{RESET}")
         return os.system(f"sudo {sys.executable} {' '.join(sys.argv)}") == 0
 
-    if IS_MACOS:
-        bin_path = shutil.which("usbanywhere-server-mac")
-        if bin_path:
-            out = run_cmd([bin_path, "bind", busid])
-            print(out or f"{GREEN}✓ Device {busid} shared.{RESET}")
-            return True
-    elif IS_LINUX:
+    if IS_LINUX:
         bin_path = shutil.which("usbip")
         if bin_path:
             out = run_cmd([bin_path, "bind", "-b", busid])
@@ -232,17 +295,13 @@ def share_device(busid):
 
 def unshare_device(busid):
     """Unshare a USB peripheral by bus ID."""
+    if IS_MACOS:
+        return mac_device_action("unshare", busid)
     if not is_root():
         print(f"{YELLOW}[!] Superuser privileges required. Re-running with sudo...{RESET}")
         return os.system(f"sudo {sys.executable} {' '.join(sys.argv)}") == 0
 
-    if IS_MACOS:
-        bin_path = shutil.which("usbanywhere-server-mac")
-        if bin_path:
-            out = run_cmd([bin_path, "unbind", busid])
-            print(out or f"{GREEN}✓ Device {busid} unbound.{RESET}")
-            return True
-    elif IS_LINUX:
+    if IS_LINUX:
         bin_path = shutil.which("usbip")
         if bin_path:
             out = run_cmd([bin_path, "unbind", "-b", busid])
@@ -254,8 +313,18 @@ def unshare_device(busid):
 # DIAGNOSTICS & SELF-TEST
 # ══════════════════════════════════════════════════════════════════════════════
 
-def run_self_test(host="127.0.0.1", port=PORT):
+def run_self_test(host=None, port=PORT):
     """Run binary loopback protocol handshake test."""
+    if IS_MACOS and host is None:
+        try:
+            state = mac_control()["status"]
+            print("Native local-control self-test passed: {} remembered devices.".format(len(state["devices"])))
+            print("Run the USB/IP network probe from the allowed Windows peer {} to {}:{}; this Mac is not an allowed network client.".format(state.get("peer", ""), state["listen"], port))
+            return True
+        except RuntimeError as error:
+            print(str(error), file=sys.stderr)
+            return False
+    host = host or "127.0.0.1"
     print(f"\n{CYAN}═══ 🧪 USBAnywhere Binary Protocol Self-Test ═══{RESET}")
     print(f"Connecting to {host}:{port}...")
 
@@ -268,6 +337,9 @@ def run_self_test(host="127.0.0.1", port=PORT):
             print(f"{GREEN}✓ TCP Connection established on port {port}{RESET}")
             break
         except Exception as e:
+            if s:
+                s.close()
+            s = None
             time.sleep(0.5)
             if attempt == 3:
                 print(f"{RED}✗ FAILED: Could not connect to port {port} ({e}){RESET}")
@@ -278,7 +350,15 @@ def run_self_test(host="127.0.0.1", port=PORT):
         req = struct.pack(">HHI", 0x0111, 0x8005, 0)
         s.sendall(req)
 
-        header = s.recv(8)
+        def exact(length):
+            data = b""
+            while len(data) < length:
+                chunk = s.recv(length - len(data))
+                if not chunk:
+                    raise EOFError("Truncated USB/IP reply")
+                data += chunk
+            return data
+        header = exact(8)
         if len(header) < 8:
             print(f"{RED}✗ FAILED: Expected 8 header bytes, received {len(header)}{RESET}")
             s.close()
@@ -288,8 +368,7 @@ def run_self_test(host="127.0.0.1", port=PORT):
         print(f"Received Header: Version=0x{version:04X}, Cmd=0x{cmd:04X}, Status={status}")
 
         if version == 0x0111 and cmd == 0x0005 and status == 0:
-            ndev_bytes = s.recv(4)
-            ndev = struct.unpack(">I", ndev_bytes)[0] if len(ndev_bytes) == 4 else 0
+            ndev = struct.unpack(">I", exact(4))[0]
             print(f"{GREEN}✓ USB/IP OP_REP_DEVLIST valid! Exported devices: {ndev}{RESET}")
             s.close()
             print(f"{GREEN}✓ PROTOCOL SELF-TEST PASSED: Server is fully operational!{RESET}\n")
@@ -320,11 +399,13 @@ def run_doctor():
 
     # 3. Port & Service
     st = get_service_status()
+    if st.get("error"):
+        print("• Service Detail:     " + st["error"])
     srv_str = f"{GREEN}ACTIVE{RESET}" if st["running"] else f"{RED}STOPPED{RESET}"
     port_str = f"{GREEN}LISTENING (Port {PORT}){RESET}" if st["port_active"] else f"{RED}CLOSED{RESET}"
     print(f"• Service Status:     {srv_str} (via {st['service_manager']})")
     print(f"• Network Listener:   {port_str}")
-    print(f"• Local LAN IPv4:     {CYAN}{get_lan_ip()}{RESET}")
+    print(f"• Server IPv4:        {CYAN}{st.get('listen') or get_lan_ip()}{RESET}")
 
     # 4. Kernel Modules (Linux only)
     if IS_LINUX:
@@ -357,7 +438,7 @@ def render_dashboard():
         os.system("clear" if os.name != "nt" else "cls")
 
         st = get_service_status()
-        lan_ip = get_lan_ip()
+        lan_ip = st.get("listen") or get_lan_ip()
         devs = list_devices()
 
         status_badge = f"{GREEN}● ACTIVE{RESET}" if st["running"] else f"{RED}○ STOPPED{RESET}"
@@ -417,14 +498,7 @@ def render_dashboard():
             run_self_test()
             input(f"\n{DIM}Press Enter to return to Dashboard...{RESET}")
         elif choice == "7":
-            if IS_MACOS:
-                log_file = "/var/log/usbanywhere-server.log"
-                if os.path.exists(log_file):
-                    os.system(f"tail -n 30 {log_file}")
-                else:
-                    print("Log file /var/log/usbanywhere-server.log does not exist yet.")
-            elif IS_LINUX:
-                os.system("journalctl -u usbipd -n 30 --no-pager")
+            show_logs()
             input(f"\n{DIM}Press Enter to return to Dashboard...{RESET}")
         elif choice == "8" or choice == "":
             continue
@@ -443,19 +517,23 @@ def main():
     )
     parser.add_argument("command", nargs="?", default="dashboard",
                         choices=["dashboard", "status", "start", "stop", "restart",
-                                 "list", "share", "unshare", "doctor", "test", "logs"],
+                                 "list", "share", "unshare", "reconnect", "doctor", "test", "logs"],
                         help="Action to perform (default: interactive dashboard)")
     parser.add_argument("busid", nargs="?", default=None, help="Target USB bus ID for share/unshare")
     parser.add_argument("--json", action="store_true", help="Output status in JSON format")
 
+    parser.add_argument("--host", help="Explicit remote host for the USB/IP network self-test")
+    parser.add_argument("--port", type=int, default=PORT, help="USB/IP test port (default 3240)")
     args = parser.parse_args()
 
     if args.command == "dashboard":
         render_dashboard()
     elif args.command == "status":
         st = get_service_status()
-        st["lan_ip"] = get_lan_ip()
-        st["devices"] = list_devices()
+        if "lan_ip" not in st:
+            st["lan_ip"] = get_lan_ip()
+        if not IS_MACOS:
+            st["devices"] = list_devices()
         if args.json:
             print(json.dumps(st, indent=2))
         else:
@@ -465,13 +543,16 @@ def main():
             print(f"LAN IP:            {st['lan_ip']}")
             print(f"Devices detected:  {len(st['devices'])}")
     elif args.command == "start":
-        start_service()
+        sys.exit(0 if start_service() else 1)
     elif args.command == "stop":
-        stop_service()
+        sys.exit(0 if stop_service() else 1)
     elif args.command == "restart":
-        stop_service()
+        if IS_MACOS:
+            sys.exit(0 if mac_service("restart") else 1)
+        if not stop_service():
+            sys.exit(1)
         time.sleep(1)
-        start_service()
+        sys.exit(0 if start_service() else 1)
     elif args.command == "list":
         devs = list_devices()
         print(f"Discovered USB Peripherals ({len(devs)}):")
@@ -481,22 +562,23 @@ def main():
         if not args.busid:
             print(f"{RED}Error: Missing bus ID. Usage: usbanywhere-ctl share <busid>{RESET}")
             sys.exit(1)
-        share_device(args.busid)
+        sys.exit(0 if share_device(args.busid) else 1)
     elif args.command == "unshare":
         if not args.busid:
             print(f"{RED}Error: Missing bus ID. Usage: usbanywhere-ctl unshare <busid>{RESET}")
             sys.exit(1)
-        unshare_device(args.busid)
+        sys.exit(0 if unshare_device(args.busid) else 1)
+    elif args.command == "reconnect":
+        if not IS_MACOS or not args.busid:
+            parser.error("reconnect requires macOS and a remembered bus ID")
+        sys.exit(0 if mac_device_action("reconnect", args.busid) else 1)
     elif args.command == "doctor":
         run_doctor()
     elif args.command == "test":
-        ok = run_self_test()
+        ok = run_self_test(args.host, args.port)
         sys.exit(0 if ok else 1)
     elif args.command == "logs":
-        if IS_MACOS:
-            os.system("tail -f /var/log/usbanywhere-server.log")
-        elif IS_LINUX:
-            os.system("journalctl -u usbipd -f")
+        sys.exit(0 if show_logs(follow=True) else 1)
 
 if __name__ == "__main__":
     main()

@@ -68,12 +68,15 @@ curl -fsSL https://raw.githubusercontent.com/oscarlosu-lab/USBAnywhere-Server/ma
 
 ## 🎛️ Suite de Control USBAnywhere (`usbanywhere-ctl`)
 
-Para esta implementación nativa de Mac, usa USBAnywhere.app o la CLI `--control`.
-La adaptación de la Suite de Control está pendiente; sus rutas y comandos antiguos
-no gestionan este servicio. Consulta el [plan de integración](docs/brainstorms/2026-10-26-native-macos-upstream-integration.md).
-Los comandos siguientes describen la herramienta upstream, incluido Linux.
+La aplicación nativa de Mac instala la CLI opcional en `/usr/local/bin/usbanywhere-ctl`.
+Usa el mismo servicio y autorización que la interfaz gráfica. La CLI requiere
+Python 3 y su biblioteca estándar; la aplicación Swift no necesita Python.
+Linux conserva su backend systemd/usbip. Desde el repositorio puedes ejecutar
+`python3 scripts/usbanywhere-ctl` antes de instalar.
 
-Tanto en macOS como en Linux se instala automáticamente la **Suite de Control USBAnywhere** (`usbanywhere-ctl`), una herramienta interactiva con interfaz TUI y CLI sin dependencias externas:
+En macOS, `test` verifica el control local autenticado. La prueba de red USB/IP
+debe ejecutarse desde el cliente Windows autorizado, o con `--host` para otro
+servidor accesible. El control local no demuestra entrada física del dispositivo.
 
 ```bash
 # Abrir el panel de control interactivo (Dashboard TUI):

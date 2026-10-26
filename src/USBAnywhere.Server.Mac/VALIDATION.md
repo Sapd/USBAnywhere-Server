@@ -94,3 +94,22 @@ failures. This stationary sample is not a movement/button test. The retry task w
 restored after raw tests and all four targets were connected at completion. Final
 installed daemon matches release SHA-256
 `e1c98f7ae5f727b37f8d565d313782fe9cee243b71ecb374f6b5df49b5f752ca`.
+
+## Shared control CLI integration
+
+The optional Python CLI now calls the native Swift control client for status,
+share/unshare and reconnect, preserving the same authorization and persistence.
+Start/stop/restart targets only the native system service; logs use its actual
+path. The Mac default self-test explicitly checks local control, with remote
+USB/IP protocol checks available through --host.
+
+Post-integration checks: 46 Swift tests, 17 adapter tests (including real isolated
+helper subprocesses and failed mutation replies), 20 isolated installer transaction
+tests (one additional root-only test skipped), four upstream CLI smoke tests, five
+loopback protocol checks and three main-repository forwarding tests. Installer
+regressions cover restoration of the CLI helper/public link and a prior link's
+untouched target, plus missing/empty tool rejection before service stop.
+
+Source CLI and main-repository forwarding CLI reach the installed service and
+report all four devices connected. Service lifecycle and mutation failure tests
+use isolated subprocesses/mocks; these tests do not stop the live service.

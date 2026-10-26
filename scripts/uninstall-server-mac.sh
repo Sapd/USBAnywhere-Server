@@ -7,7 +7,12 @@ if [ "$(id -u)" -ne 0 ]; then echo 'Run this script with sudo.' >&2; exit 2; fi
 launchctl bootout system/local.usbanywhere.macos 2>/dev/null || true
 launchctl bootout system/com.usbanywhere.server 2>/dev/null || true
 rm -f /Library/LaunchDaemons/local.usbanywhere.macos.plist /Library/LaunchDaemons/com.usbanywhere.server.plist
+if [ -L /usr/local/bin/usbanywhere-ctl ] \
+    && [ "$(readlink /usr/local/bin/usbanywhere-ctl)" = /Library/PrivilegedHelperTools/USBAnywhereMac/usbanywhere-ctl ]; then
+    rm -f /usr/local/bin/usbanywhere-ctl
+fi
 rm -f /Library/PrivilegedHelperTools/USBAnywhereMac/usbanywhere-mac
+rm -f /Library/PrivilegedHelperTools/USBAnywhereMac/usbanywhere-ctl
 rm -f /var/run/usbanywhere-mac/control.sock
 rm -rf /Applications/USBAnywhere.app
 # Retain logs, sharing preferences and the pre-Swift backup for diagnosis/recovery.

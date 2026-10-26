@@ -21,6 +21,10 @@ with the Mac independently. macOS may require Login Items approval when enabling
 GUI login startup. Setup opened outside Applications explains where to move the
 app before enabling installation/startup.
 
+The optional shared `usbanywhere-ctl` command is installed with the helper and
+requires Python 3. The GUI and USB service remain native Swift and do not require
+a Python installation.
+
 A fresh Windows PC still requires its USB/IP driver/client installation once.
 Mac setup can discover Windows peers through an existing Tailscale installation;
 local-network addresses can also be entered directly.

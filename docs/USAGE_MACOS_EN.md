@@ -16,3 +16,9 @@ no unverified prebuilt download in this source installation flow.
 
 **Credits:** USBAnywhere by [oscarlosu-lab (SnakeFoxu)](https://github.com/oscarlosu-lab).
 Native macOS server and app by [Denis Arnst (Sapd)](https://github.com/Sapd).
+
+The optional `usbanywhere-ctl` CLI is installed during setup and requires Python 3.
+It uses the same service as the app: `status --json`, `list`, `share 1-1`,
+`unshare 1-1` and `reconnect 1-1`. Only service start/stop/restart require sudo.
+`test` checks authenticated local control; a network USB/IP probe must originate
+from the allowed client. See the Mac README for exact commands and boundaries.

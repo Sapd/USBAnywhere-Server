@@ -82,6 +82,7 @@ jobs:
         run: |
           chmod +x scripts/usbanywhere-ctl
           python3 tests/test_control_suite.py
+          python3 -m unittest discover -s tests -p test_native_mac_control.py -v
           python3 scripts/usbanywhere-ctl doctor
           python3 scripts/usbanywhere-ctl status
 
@@ -110,6 +111,7 @@ jobs:
         run: |
           chmod +x scripts/usbanywhere-ctl
           python3 tests/test_control_suite.py
+          python3 -m unittest discover -s tests -p test_native_mac_control.py -v
 
       - name: Run USBAnywhere System Doctor on Linux
         run: |

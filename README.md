@@ -75,12 +75,15 @@ curl -fsSL https://raw.githubusercontent.com/oscarlosu-lab/USBAnywhere-Server/ma
 
 ## 🎛️ USBAnywhere Control Suite (`usbanywhere-ctl`)
 
-For this native Mac replacement, use USBAnywhere.app or the documented `--control`
-CLI. The shared Control Suite's Mac adapter is pending; its old service paths and
-commands do not manage this implementation. See the [integration plan](docs/brainstorms/2026-10-26-native-macos-upstream-integration.md).
-The commands below describe the upstream tool, including its Linux support.
+The native Mac app installs the optional shared CLI at `/usr/local/bin/usbanywhere-ctl`.
+It uses the same native service and authorization as the GUI. The CLI requires
+Python 3 with its standard library; the Swift app itself does not require Python.
+Linux keeps its systemd/usbip backend. From a source checkout, run
+`python3 scripts/usbanywhere-ctl` before installing.
 
-Both macOS and Linux installations include the **USBAnywhere Control Suite** (`usbanywhere-ctl`), a unified, zero-dependency interactive TUI dashboard and CLI management tool:
+On macOS, `test` checks the authenticated local control service. Run a network
+USB/IP probe from the allowed Windows peer, or pass `--host` for another reachable
+server. A local control check does not prove physical USB/application input.
 
 ```bash
 # Launch interactive TUI Control Dashboard:

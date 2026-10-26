@@ -12,3 +12,9 @@ cerrarse sin detener el servidor en segundo plano.
 
 **Créditos:** USBAnywhere por [oscarlosu-lab (SnakeFoxu)](https://github.com/oscarlosu-lab).
 Servidor nativo para macOS y aplicación por [Denis Arnst (Sapd)](https://github.com/Sapd).
+
+La CLI opcional `usbanywhere-ctl` se instala durante la configuración y requiere
+Python 3. Usa el mismo servicio: `status --json`, `list`, `share 1-1`,
+`unshare 1-1` y `reconnect 1-1`. Solo iniciar/detener/reiniciar el servicio requiere
+sudo. `test` verifica el control local; la prueba USB/IP de red debe ejecutarse
+desde el cliente autorizado. Consulta el README para los detalles.

@@ -44,6 +44,10 @@ if name == 'mv':
             'swap_plist': 'local.usbanywhere.macos.plist',
             'swap_app': 'USBAnywhere.app'}
     marker = root/'swap-failed'
+    if failure in ['swap_control_helper', 'swap_control_link'] and target.name == 'usbanywhere-ctl' \
+        and source.name == ('control-new' if failure == 'swap_control_helper' else 'new') and not marker.exists():
+        marker.touch()
+        sys.exit(1)
     if failure in swap and source.name == 'new' and target.name == swap[failure] and not marker.exists():
         marker.touch()
         sys.exit(1)
@@ -128,6 +132,13 @@ class InstallerTransactions(unittest.TestCase):
             self.executable(self.root/'bin'/tool, FAKE_TOOL)
         self.package = self.root/'Package'
         self.executable(self.package/'build/usbanywhere-server-mac', FAKE_SERVER)
+        self.executable(self.package/'build/usbanywhere-ctl', '#!/usr/bin/env python3\n# NEW CONTROL\n')
+        self.control = self.root/'Library/PrivilegedHelperTools/USBAnywhereMac/usbanywhere-ctl'
+        self.executable(self.control, '#!/bin/sh\n# OLD CONTROL\n')
+        self.control_link = self.root/'usr/local/bin/usbanywhere-ctl'
+        self.executable(self.control_link, '#!/bin/sh\n# OLD LINK\n')
+        self.old_control = self.control.read_bytes()
+        self.old_link = self.control_link.read_bytes()
         (self.package/'build/USBAnywhere.app').mkdir()
         (self.package/'build/USBAnywhere.app/version').write_text('NEW APP')
         self.binary = self.root/'Library/PrivilegedHelperTools/USBAnywhereMac/usbanywhere-mac'
@@ -176,6 +187,9 @@ class InstallerTransactions(unittest.TestCase):
     def assert_restored(self, result):
         self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(self.binary.read_bytes(), self.old_binary)
+        self.assertEqual(self.control.read_bytes(), self.old_control)
+        self.assertFalse(self.control_link.is_symlink())
+        self.assertEqual(self.control_link.read_bytes(), self.old_link)
         self.assertEqual(self.plist.read_bytes(), self.old_plist)
         self.assertEqual((self.app/'version').read_text(), 'OLD APP')
         self.assertEqual(self.targets.read_bytes(), self.original_targets)
@@ -187,6 +201,9 @@ class InstallerTransactions(unittest.TestCase):
         result = self.run_installer()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('# NEW', self.binary.read_text())
+        self.assertIn('NEW CONTROL', self.control.read_text())
+        self.assertTrue(self.control_link.is_symlink())
+        self.assertEqual(self.control_link.resolve(), self.control.resolve())
         self.assertEqual((self.app/'version').read_text(), 'NEW APP')
         self.assertEqual(self.services()[LABEL], 'NEW')
         self.assertEqual(Path(str(self.binary)+'.before-swift').read_bytes(), self.old_binary)
@@ -198,6 +215,29 @@ class InstallerTransactions(unittest.TestCase):
         self.assertEqual(self.targets.read_bytes(), self.original_targets)
         self.assertFalse(list(self.binary.parent.glob('.install.*')))
         self.assertFalse(list(self.app.parent.glob('.usbanywhere.*')))
+
+    def test_missing_control_tool_fails_before_stopping_service(self):
+        (self.package/'build/usbanywhere-ctl').unlink()
+        self.assert_restored(self.run_installer())
+        self.assertFalse(any(event[:2] == ['launchctl', 'bootout'] for event in self.events()))
+
+    def test_empty_control_tool_fails_before_stopping_service(self):
+        (self.package/'build/usbanywhere-ctl').write_bytes(b'')
+        self.assert_restored(self.run_installer())
+        self.assertFalse(any(event[:2] == ['launchctl', 'bootout'] for event in self.events()))
+
+    def test_existing_control_symlink_is_restored_without_touching_its_target(self):
+        previous = self.root/'another-control'
+        previous.write_text('PREVIOUS OWNER')
+        self.control_link.unlink()
+        self.control_link.symlink_to(previous)
+        result = self.run_installer('bootstrap')
+        self.assertNotEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(self.control_link.is_symlink())
+        self.assertEqual(self.control_link.resolve(), previous.resolve())
+        self.assertEqual(previous.read_text(), 'PREVIOUS OWNER')
+        self.assertEqual(self.control.read_bytes(), self.old_control)
+        self.assertEqual(self.services()[LABEL], 'OLD')
 
     def test_preflight_failure_keeps_the_service_and_all_files(self):
         result = self.run_installer('preflight')
@@ -235,7 +275,7 @@ class InstallerTransactions(unittest.TestCase):
         self.assertFalse(any(event[:2] == ['launchctl', 'bootout'] for event in self.events()))
 
     def test_file_swap_failures_restore_binary_plist_app_and_service(self):
-        for failure in ['swap_binary', 'swap_plist', 'swap_app']:
+        for failure in ['swap_binary', 'swap_plist', 'swap_app', 'swap_control_helper', 'swap_control_link']:
             with self.subTest(failure=failure):
                 (self.root/'events').write_text('')
                 (self.root/'swap-failed').unlink(missing_ok=True)
@@ -277,13 +317,15 @@ class InstallerTransactions(unittest.TestCase):
 
     def test_fresh_failed_install_leaves_no_replacement_files_or_service(self):
         self.binary.unlink()
+        self.control.unlink()
+        self.control_link.unlink()
         self.plist.unlink()
         shutil.rmtree(self.app)
         self.targets.unlink()
         (self.root/'services.json').write_text('{}')
         result = self.run_installer('bootstrap')
         self.assertNotEqual(result.returncode, 0)
-        for path in [self.binary, self.plist, self.app, self.targets]:
+        for path in [self.binary, self.plist, self.app, self.targets, self.control, self.control_link]:
             self.assertFalse(path.exists(), str(path))
         self.assertEqual(self.services(), {})
 
