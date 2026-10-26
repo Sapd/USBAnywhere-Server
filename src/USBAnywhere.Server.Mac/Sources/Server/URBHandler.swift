@@ -64,7 +64,6 @@ public final class URBHandler {
         // Standard GET_DESCRIPTOR (0x80, 0x06)
         if bmRequestType == 0x80 && bRequest == 0x06 {
             let descType = UInt8(wValue >> 8)
-            let descIndex = UInt8(wValue & 0xFF)
             
             if descType == 1 { // Device Descriptor
                 let devDesc = createDeviceDescriptor()

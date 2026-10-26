@@ -110,12 +110,18 @@ public final class IOKitDeviceManager {
         
         // Speed detection
         let speedVal = (getProperty(service, key: "Device Speed") as? NSNumber)?.uint32Value ?? 2
-        let usbipSpeed: UInt32 = speedVal switch {
-            0 => USBIPConstants.speedLow,
-            1 => USBIPConstants.speedFull,
-            2 => USBIPConstants.speedHigh,
-            3 => USBIPConstants.speedSuper,
-            _ => USBIPConstants.speedHigh
+        let usbipSpeed: UInt32
+        switch speedVal {
+        case 0:
+            usbipSpeed = USBIPConstants.speedLow
+        case 1:
+            usbipSpeed = USBIPConstants.speedFull
+        case 2:
+            usbipSpeed = USBIPConstants.speedHigh
+        case 3:
+            usbipSpeed = USBIPConstants.speedSuper
+        default:
+            usbipSpeed = USBIPConstants.speedHigh
         }
         
         // Interfaces

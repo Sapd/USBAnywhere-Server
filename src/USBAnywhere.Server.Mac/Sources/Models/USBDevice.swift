@@ -10,12 +10,13 @@ public struct USBInterfaceInfo: Codable, Equatable {
     public let interfaceClass: UInt8
     public let interfaceSubClass: UInt8
     public let interfaceProtocol: UInt8
-    public let padding: UInt8 = 0
+    public var padding: UInt8 = 0
     
     public init(interfaceClass: UInt8, interfaceSubClass: UInt8, interfaceProtocol: UInt8) {
         self.interfaceClass = interfaceClass
         self.interfaceSubClass = interfaceSubClass
         self.interfaceProtocol = interfaceProtocol
+        self.padding = 0
     }
 }
 

@@ -188,7 +188,7 @@ public final class USBIPServer {
                       let devid = buf.readUInt32(),
                       let _ = buf.readUInt32(),
                       let ep = buf.readUInt32(),
-                      let unlinkSeqnum = buf.readUInt32() else { break }
+                      let _ = buf.readUInt32() else { break }
                 
                 // Return RET_UNLINK
                 let retBuf = ByteBuffer()
