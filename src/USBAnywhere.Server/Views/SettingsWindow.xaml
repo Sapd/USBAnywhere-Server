@@ -87,8 +87,10 @@
                 
                 <!-- SECURITY -->
                 <TextBlock x:Name="secSecurity" Text="🔒 SECURITY" Style="{StaticResource SectionHeader}"/>
-                <CheckBox x:Name="chkWhitelist" Content="Enable IP Whitelist"/>
-                <CheckBox x:Name="chkRequirePIN" Content="Require PIN before sharing devices"/>
+                <CheckBox x:Name="chkWhitelist" Content="Enable IP Whitelist (Enforced via Windows Firewall)"/>
+                <TextBlock Text="Note: USB/IP communicates without PIN authentication; security is strictly enforced via Firewall &amp; VPN." 
+                           FontSize="10" Foreground="{DynamicResource TextSecondary}" 
+                           TextWrapping="Wrap" Margin="20,0,0,0"/>
                 
                 <!-- NETWORK -->
                 <TextBlock x:Name="secNetwork" Text="🌐 NETWORK (TCP Port 3240)" Style="{StaticResource SectionHeader}"/>

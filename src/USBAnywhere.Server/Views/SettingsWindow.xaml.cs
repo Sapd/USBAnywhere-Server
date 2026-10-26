@@ -45,7 +45,6 @@ public partial class SettingsWindow : Window
 
         secSecurity.Text = _localization.GetText("sec_security", _currentLanguage);
         chkWhitelist.Content = _localization.GetText("chk_whitelist", _currentLanguage);
-        chkRequirePIN.Content = _localization.GetText("chk_require_pin", _currentLanguage);
 
         secNetwork.Text = _localization.GetText("sec_network", _currentLanguage);
         btnFirewall.Content = _localization.GetText("btn_firewall", _currentLanguage);
@@ -75,7 +74,6 @@ public partial class SettingsWindow : Window
         chkAutoBind.IsChecked = settings.AutoBindEnabled;
 
         chkWhitelist.IsChecked = settings.WhitelistEnabled;
-        chkRequirePIN.IsChecked = settings.RequirePIN;
 
         UpdateFirewallStatus(FirewallService.IsRuleConfigured() || settings.FirewallConfigured);
 
@@ -94,7 +92,6 @@ public partial class SettingsWindow : Window
         settings.AutoBindEnabled = chkAutoBind.IsChecked ?? false;
 
         settings.WhitelistEnabled = chkWhitelist.IsChecked ?? false;
-        settings.RequirePIN = chkRequirePIN.IsChecked ?? false;
 
         if (int.TryParse(txtRefreshInterval.Text, out int interval) && interval >= 1 && interval <= 60)
         {

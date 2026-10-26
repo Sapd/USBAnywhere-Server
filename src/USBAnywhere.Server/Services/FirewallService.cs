@@ -50,14 +50,31 @@ public static class FirewallService
         }
     }
 
-    public static async Task<bool> CreateRuleAsync()
+    public static async Task<bool> CreateRuleAsync(string? allowedIps = null)
     {
         try
         {
-            LogService.Info("Creating firewall rule for USB/IP...");
+            LogService.Info("Creating hardened firewall rule for USB/IP...");
+
+            // Remove previous rule first to avoid duplicates or loose policies
+            await RemoveRuleAsync();
+
+            string remoteIpClause;
+            if (!string.IsNullOrWhiteSpace(allowedIps))
+            {
+                remoteIpClause = $"remoteip=\"{allowedIps}\"";
+            }
+            else if (SettingsService.Current.WhitelistEnabled && SettingsService.Current.WhitelistedIPs.Any())
+            {
+                remoteIpClause = $"remoteip=\"{string.Join(",", SettingsService.Current.WhitelistedIPs)}\"";
+            }
+            else
+            {
+                remoteIpClause = "remoteip=localsubnet";
+            }
 
             var inboundResult = await RunNetshCommandAsync(
-                $"advfirewall firewall add rule name=\"{RuleName}\" dir=in action=allow protocol=tcp localport={Port}");
+                $"advfirewall firewall add rule name=\"{RuleName}\" dir=in action=allow protocol=tcp localport={Port} profile=private,domain {remoteIpClause}");
 
             if (!inboundResult)
             {
@@ -65,7 +82,7 @@ public static class FirewallService
                 return false;
             }
 
-            LogService.Info($"✅ Firewall rule created: {RuleName}");
+            LogService.Info($"✅ Firewall rule created: {RuleName} (profile=private,domain, {remoteIpClause})");
             SettingsService.Current.FirewallConfigured = true;
             SettingsService.Save();
 
