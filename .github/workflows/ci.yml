@@ -58,3 +58,66 @@ jobs:
           sleep 3
           python3 ../../tests/test_live_server_macos.py
           kill $SERVER_PID
+
+      - name: Verify Control Suite (usbanywhere-ctl) on macOS
+        run: |
+          chmod +x scripts/usbanywhere-ctl
+          python3 tests/test_control_suite.py
+          python3 scripts/usbanywhere-ctl doctor
+          python3 scripts/usbanywhere-ctl status
+
+  build-and-test-linux:
+    name: Control Suite & Integration Tests (Linux Ubuntu)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq usbip hwdata python3
+
+      - name: Verify Shell Scripts Syntax
+        run: |
+          bash -n scripts/install-server-linux.sh
+          bash -n scripts/uninstall-server-linux.sh
+          bash -n scripts/install-server-mac.sh
+          bash -n scripts/uninstall-server-mac.sh
+
+      - name: Run Control Suite Unit Tests
+        run: |
+          chmod +x scripts/usbanywhere-ctl
+          python3 tests/test_control_suite.py
+
+      - name: Run USBAnywhere System Doctor on Linux
+        run: |
+          python3 scripts/usbanywhere-ctl doctor
+
+      - name: Verify Control Suite Status & List
+        run: |
+          python3 scripts/usbanywhere-ctl status --json
+          python3 scripts/usbanywhere-ctl list
+
+      - name: Live TCP Loopback Test (Protocol Handshake on Port 3240)
+        run: |
+          python3 -c "
+          import socket, struct, threading, time
+          s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+          s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+          s.bind(('127.0.0.1', 3240))
+          s.listen(1)
+          def handle():
+              conn, _ = s.accept()
+              req = conn.recv(8)
+              conn.sendall(struct.pack('>HHII', 0x0111, 0x0005, 0, 0))
+              conn.close()
+              s.close()
+          t = threading.Thread(target=handle)
+          t.daemon = True
+          t.start()
+          time.sleep(1)
+          " &
+          sleep 2
+          python3 scripts/usbanywhere-ctl test

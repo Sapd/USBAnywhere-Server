@@ -28,6 +28,7 @@ func printHelp() {
       bind <busid>               Bind and export a USB device (e.g. 1-1)
       unbind <busid>             Unbind a shared USB device
       serve [options]            Start USB/IP server daemon
+      control, dashboard         Open interactive Control Suite dashboard
       install-service            Install and start background launchd service (sudo)
       uninstall-service          Stop and remove background launchd service (sudo)
       help, --help, -h           Show this help information
@@ -60,6 +61,20 @@ case "help", "--help", "-h":
     
 case "version", "--version", "-v":
     print("USBAnywhere Server for macOS v\(version)")
+
+case "control", "dashboard":
+    let ctlPath = "/usr/local/bin/usbanywhere-ctl"
+    if FileManager.default.fileExists(atPath: ctlPath) {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        task.arguments = ["python3", ctlPath] + Array(CommandLine.arguments.dropFirst(2))
+        try? task.run()
+        task.waitUntilExit()
+        exit(task.terminationStatus)
+    } else {
+        printBanner()
+        print("💡 USBAnywhere Control Suite: run 'usbanywhere-ctl' or re-run installer.")
+    }
     
 case "list":
     printBanner()

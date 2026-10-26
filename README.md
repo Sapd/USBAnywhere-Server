@@ -63,6 +63,47 @@ See [macOS User Guide (English)](docs/USAGE_MACOS_EN.md) / [Guía de macOS (Espa
 
 ---
 
+## 🐧 Quick Start — Linux Server (Debian/Ubuntu/Raspberry Pi)
+
+On your Linux machine or Raspberry Pi, open **Terminal** and run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oscarlosu-lab/USBAnywhere-Server/main/scripts/install-server-linux.sh | sudo bash
+```
+
+---
+
+## 🎛️ USBAnywhere Control Suite (`usbanywhere-ctl`)
+
+Both macOS and Linux installations include the **USBAnywhere Control Suite** (`usbanywhere-ctl`), a unified, zero-dependency interactive TUI dashboard and CLI management tool:
+
+```bash
+# Launch interactive TUI Control Dashboard:
+usbanywhere-ctl
+
+# Run complete system health check:
+usbanywhere-ctl doctor
+
+# Run binary USB/IP protocol loopback self-test:
+usbanywhere-ctl test
+
+# Service management:
+usbanywhere-ctl status
+sudo usbanywhere-ctl start
+sudo usbanywhere-ctl stop
+sudo usbanywhere-ctl restart
+
+# Device inventory & binding:
+usbanywhere-ctl list
+sudo usbanywhere-ctl share 1-1
+sudo usbanywhere-ctl unshare 1-1
+
+# View live colorized daemon logs:
+usbanywhere-ctl logs
+```
+
+---
+
 ## 🔗 USBAnywhere Ecosystem
 
 | Component | Platform / Role | Description |

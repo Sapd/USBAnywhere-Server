@@ -36,6 +36,11 @@ if [[ -f "${BINARY_TARGET}" ]]; then
     echo -e "${GREEN}✓ Binary removed from ${BINARY_TARGET}.${NC}"
 fi
 
+if [[ -f "/usr/local/bin/usbanywhere-ctl" ]]; then
+    rm -f "/usr/local/bin/usbanywhere-ctl"
+    echo -e "${GREEN}✓ Control Suite removed.${NC}"
+fi
+
 if [[ -f "${LOG_FILE}" ]]; then
     rm -f "${LOG_FILE}"
     echo -e "${GREEN}✓ Log file removed.${NC}"

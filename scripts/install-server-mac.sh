@@ -117,7 +117,19 @@ launchctl load -w "${PLIST_PATH}"
 
 echo -e "${GREEN}✓ LaunchDaemon loaded and running at boot.${NC}"
 
-# 5. Display success and instructions
+# 5. Install unified Control Suite (usbanywhere-ctl)
+echo -e "${CYAN}🎛️ Installing USBAnywhere Control Suite...${NC}"
+CTL_TARGET="/usr/local/bin/usbanywhere-ctl"
+if [[ -f "${SCRIPT_DIR}/usbanywhere-ctl" ]]; then
+    cp "${SCRIPT_DIR}/usbanywhere-ctl" "${CTL_TARGET}"
+    chmod +x "${CTL_TARGET}"
+else
+    curl -fsSL "https://raw.githubusercontent.com/oscarlosu-lab/USBAnywhere-Server/main/scripts/usbanywhere-ctl" -o "${CTL_TARGET}" || true
+    chmod +x "${CTL_TARGET}" 2>/dev/null || true
+fi
+echo -e "${GREEN}✓ Control Suite installed to ${CTL_TARGET}.${NC}"
+
+# 6. Display success and instructions
 IP_ADDR=$(ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "127.0.0.1")
 
 echo ""
