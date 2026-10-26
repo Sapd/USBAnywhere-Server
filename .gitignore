@@ -76,3 +76,6 @@ backups/
 *.vcxproj
 *.vcxproj.filters
 *.vcxproj.user
+
+__pycache__/
+*.pyc
