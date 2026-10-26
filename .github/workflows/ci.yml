@@ -43,3 +43,18 @@ jobs:
           cd src/USBAnywhere.Server.Mac
           swift build -c release
           swift test
+
+      - name: Verify CLI Execution & IOKit Device Enumeration
+        run: |
+          cd src/USBAnywhere.Server.Mac
+          swift run usbanywhere-server-mac help
+          swift run usbanywhere-server-mac list
+
+      - name: Live TCP Loopback Test (Protocol Handshake on Port 3240)
+        run: |
+          cd src/USBAnywhere.Server.Mac
+          swift run usbanywhere-server-mac serve --port 3240 &
+          SERVER_PID=$!
+          sleep 3
+          python3 ../../tests/test_live_server_macos.py
+          kill $SERVER_PID
